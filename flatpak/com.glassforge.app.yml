@@ -1,0 +1,42 @@
+app-id: com.glassforge.app
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node20
+command: glassforge
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --share=network
+  - --device=dri
+  - --filesystem=home
+  - --talk-name=org.kde.KWin
+  - --talk-name=org.freedesktop.Notifications
+  - --env=PATH=/app/bin:/usr/bin:/home/user/.local/bin:/usr/local/bin
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node20/bin
+  env:
+    CARGO_HOME: /run/build/glassforge/cargo
+    NPM_CONFIG_PREFIX: /run/build/glassforge/npm
+
+modules:
+  - name: glassforge
+    buildsystem: simple
+    build-commands:
+      - npm config set store-dir /run/build/glassforge/pnpm-store
+      - corepack enable || npm install -g pnpm
+      - pnpm install --frozen-lockfile || pnpm install
+      - pnpm build
+      - cd src-tauri && cargo build --release --locked
+      - install -Dm755 src-tauri/target/release/glassforge /app/bin/glassforge
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/256x256/apps/com.glassforge.app.png
+      - install -Dm644 flatpak/com.glassforge.app.desktop /app/share/applications/com.glassforge.app.desktop
+      - install -Dm644 flatpak/com.glassforge.app.metainfo.xml /app/share/metainfo/com.glassforge.app.metainfo.xml
+    sources:
+      - type: dir
+        path: ..

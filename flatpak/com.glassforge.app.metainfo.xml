@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.glassforge.app</id>
+  <name>GlassForge</name>
+  <summary>A glassy Linux GUI for Claude Code</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>GlassForge contributors</developer_name>
+  <description>
+    <p>
+      GlassForge is a fast Linux desktop wrapper for the Claude Code CLI.
+      It runs the user's local claude binary inside PTY-backed sessions
+      and surfaces live streaming output, usage tracking, a skills manager,
+      and a runtime-configurable glass theme optimized for KDE Plasma 6.
+    </p>
+  </description>
+  <categories>
+    <category>Development</category>
+    <category>IDE</category>
+  </categories>
+  <url type="homepage">https://github.com/3L0935/glassforge</url>
+  <url type="bugtracker">https://github.com/3L0935/glassforge/issues</url>
+  <launchable type="desktop-id">com.glassforge.app.desktop</launchable>
+  <releases>
+    <release version="0.1.0" date="2026-04-14">
+      <description>
+        <p>Initial release.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
+</component>

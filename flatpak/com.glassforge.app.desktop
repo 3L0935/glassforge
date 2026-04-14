@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=GlassForge
+GenericName=Claude Code GUI
+Comment=A glassy Linux GUI for Claude Code
+Exec=glassforge %U
+Icon=com.glassforge.app
+Terminal=false
+Categories=Development;IDE;
+StartupWMClass=GlassForge
+Keywords=claude;code;ai;terminal;
