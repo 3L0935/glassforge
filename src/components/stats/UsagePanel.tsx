@@ -106,8 +106,6 @@ export function UsagePanel() {
 
   const fiveHourPct = rates?.fiveHour?.usedPercentage ?? null;
   const weeklyPct = rates?.sevenDay?.usedPercentage ?? null;
-  const fiveHourResets = rates?.fiveHour?.resetsAt ?? null;
-  const weeklyResets = rates?.sevenDay?.resetsAt ?? null;
   const opusPct = rates?.sevenDayOpus?.usedPercentage ?? null;
   const sonnetPct = rates?.sevenDaySonnet?.usedPercentage ?? null;
 
@@ -136,7 +134,7 @@ export function UsagePanel() {
         <div className={styles.rateLimits}>
           {fiveHourPct !== null ? (
             <LimitsBar
-              label={`5-hour window${fiveHourResets ? ` · resets ${formatRelative(fiveHourResets).replace(" ago", "")}` : ""}`}
+              label="5-hour window"
               used={Math.round(fiveHourPct * 100)}
               total={10_000}
               format={() => `${fiveHourPct.toFixed(1)}%`}
@@ -144,7 +142,7 @@ export function UsagePanel() {
           ) : null}
           {weeklyPct !== null ? (
             <LimitsBar
-              label={`Weekly${weeklyResets ? ` · resets ${formatRelative(weeklyResets).replace(" ago", "")}` : ""}`}
+              label="Weekly"
               used={Math.round(weeklyPct * 100)}
               total={10_000}
               format={() => `${weeklyPct.toFixed(1)}%`}
