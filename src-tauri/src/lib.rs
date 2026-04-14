@@ -46,6 +46,7 @@ pub fn run() {
             list_skills,
             install_skill,
             set_kde_blur,
+            set_kde_blur_strength,
             detect_display_server,
         ])
         .run(tauri::generate_context!())
@@ -112,6 +113,19 @@ fn set_kde_blur(window: WebviewWindow, enabled: bool) -> Result<(), String> {
     #[cfg(not(target_os = "linux"))]
     {
         let _ = (window, enabled);
+        Err("KDE blur is only available on Linux".to_string())
+    }
+}
+
+#[tauri::command]
+fn set_kde_blur_strength(strength: u8) -> Result<(), String> {
+    #[cfg(target_os = "linux")]
+    {
+        kde::blur::set_blur_strength(strength).map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = strength;
         Err("KDE blur is only available on Linux".to_string())
     }
 }

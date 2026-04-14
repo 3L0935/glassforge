@@ -1,9 +1,11 @@
 import { PRESETS, type ThemeVars } from "@/lib/theme";
 import { useThemeStore } from "@/stores/themeStore";
 
+import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
+
 import styles from "./ThemeEditor.module.css";
 
-const FONT_SANS_OPTIONS: { label: string; value: string }[] = [
+const FONT_SANS_OPTIONS: DropdownOption<string>[] = [
   {
     label: "Geist / Inter",
     value:
@@ -13,7 +15,7 @@ const FONT_SANS_OPTIONS: { label: string; value: string }[] = [
   { label: "System", value: "system-ui, sans-serif" },
 ];
 
-const FONT_MONO_OPTIONS: { label: string; value: string }[] = [
+const FONT_MONO_OPTIONS: DropdownOption<string>[] = [
   {
     label: "Geist Mono",
     value:
@@ -153,13 +155,13 @@ export function ThemeEditor() {
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Typography</h3>
-        <SelectRow
+        <DropdownRow
           label="Sans"
           value={vars.fontSans}
           options={FONT_SANS_OPTIONS}
           onChange={patchFn("fontSans")}
         />
-        <SelectRow
+        <DropdownRow
           label="Mono"
           value={vars.fontMono}
           options={FONT_MONO_OPTIONS}
@@ -245,27 +247,22 @@ function SliderRow({
   );
 }
 
-function SelectRow({
+function DropdownRow({
   label,
   value,
   options,
   onChange,
-}: RowProps<string> & { options: { label: string; value: string }[] }) {
+}: RowProps<string> & { options: DropdownOption<string>[] }) {
   return (
-    <label className={styles.row}>
+    <div className={styles.row}>
       <span className={styles.rowLabel}>{label}</span>
-      <select
-        className={styles.select}
+      <Dropdown
+        options={options}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
-        {options.map((o) => (
-          <option key={o.label} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+        onChange={onChange}
+        ariaLabel={label}
+      />
+    </div>
   );
 }
 

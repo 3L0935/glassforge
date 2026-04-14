@@ -43,6 +43,12 @@ export async function setKdeBlur(enabled: boolean): Promise<void> {
   return invoke<void>("set_kde_blur", { enabled });
 }
 
+export async function setKdeBlurStrength(strength: number): Promise<void> {
+  return invoke<void>("set_kde_blur_strength", {
+    strength: Math.max(1, Math.min(15, Math.round(strength))),
+  });
+}
+
 export type DisplayServer = "wayland" | "x11" | "unknown" | "unsupported";
 
 export async function detectDisplayServer(): Promise<DisplayServer> {

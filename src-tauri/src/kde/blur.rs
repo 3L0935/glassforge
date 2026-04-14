@@ -7,9 +7,12 @@
 //! startup to make this possible — KWin honors the X11 blur atom for
 //! Xwayland clients just as well as for native X11 clients).
 //!
-//! Native Wayland blur would require binding the private
-//! `org_kde_kwin_blur_manager` protocol to Tauri's existing `wl_surface`,
-//! which is tracked for a future release.
+//! KWin does not expose a per-window blur strength; it's a global
+//! compositor setting. `set_blur_strength` therefore writes to
+//! `~/.config/kwinrc` and asks KWin to reconfigure. This affects every
+//! window that uses the blur effect, which is documented in the UI.
+
+use std::process::Command;
 
 use anyhow::{anyhow, Context, Result};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -63,7 +66,6 @@ fn set_kde_blur_x11(window_id: u32, enabled: bool) -> Result<()> {
         .atom;
 
     if enabled {
-        // An empty CARDINAL[] region means "blur the entire client area".
         let empty: &[u32] = &[];
         conn.change_property32(
             PropMode::REPLACE,
@@ -85,6 +87,49 @@ fn set_kde_blur_x11(window_id: u32, enabled: bool) -> Result<()> {
     Ok(())
 }
 
+/// Update KWin's global blur strength and ask KWin to reload its config.
+/// Strength is clamped to the [1, 15] range KWin accepts. This is a
+/// compositor-global setting — it affects every blurred window on the
+/// user's session.
+pub fn set_blur_strength(strength: u8) -> Result<()> {
+    let clamped = strength.clamp(1, 15).to_string();
+
+    run_alternatives(
+        &["kwriteconfig6", "kwriteconfig5"],
+        &[
+            "--file",
+            "kwinrc",
+            "--group",
+            "Effect-blur",
+            "--key",
+            "BlurStrength",
+            clamped.as_str(),
+        ],
+    )
+    .context("update kwinrc BlurStrength")?;
+
+    run_alternatives(
+        &["qdbus6", "qdbus"],
+        &["org.kde.KWin", "/KWin", "reconfigure"],
+    )
+    .context("reload kwin config")?;
+
+    Ok(())
+}
+
+fn run_alternatives(alternatives: &[&str], args: &[&str]) -> Result<()> {
+    let mut last: Option<anyhow::Error> = None;
+    for cmd in alternatives {
+        match Command::new(cmd).args(args).status() {
+            Ok(s) if s.success() => return Ok(()),
+            Ok(s) => last = Some(anyhow!("{cmd} exited with {s}")),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => last = Some(e.into()),
+        }
+    }
+    Err(last.unwrap_or_else(|| anyhow!("none of {:?} are installed", alternatives)))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -92,5 +137,13 @@ mod tests {
     #[test]
     fn session_type_detection_does_not_panic() {
         let _ = detect_session_type();
+    }
+
+    #[test]
+    fn run_alternatives_errors_when_nothing_found() {
+        let err = run_alternatives(&["__glassforge_nope_1", "__glassforge_nope_2"], &["--help"])
+            .unwrap_err();
+        let msg = format!("{err}");
+        assert!(msg.contains("not installed") || msg.contains("__glassforge_nope"));
     }
 }

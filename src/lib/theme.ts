@@ -16,6 +16,7 @@ export type ThemeVars = {
 
   windowBgOpacity: number;
   kdeBlurEnabled: boolean;
+  kdeBlurStrength: number;
 
   fontSans: string;
   fontMono: string;
@@ -37,6 +38,7 @@ export const DEFAULT_THEME: ThemeVars = {
 
   windowBgOpacity: 0.7,
   kdeBlurEnabled: false,
+  kdeBlurStrength: 5,
 
   fontSans:
     '"Geist", "Inter", "SF Pro Display", system-ui, sans-serif',

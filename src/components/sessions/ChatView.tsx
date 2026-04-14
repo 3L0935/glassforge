@@ -11,10 +11,11 @@ import type { ChatEntry, SessionInfo } from "@/lib/types";
 import { useSessionStore, type SessionUsage } from "@/stores/sessionStore";
 
 import { ContextRing } from "@/components/stats/ContextRing";
+import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
 
 import styles from "./ChatView.module.css";
 
-const MODEL_OPTIONS: { label: string; value: string | null }[] = [
+const MODEL_OPTIONS: DropdownOption<string | null>[] = [
   { label: "Default", value: null },
   { label: "Opus 4.6", value: "opus" },
   { label: "Sonnet 4.6", value: "sonnet" },
@@ -60,19 +61,13 @@ export function ChatView({ session, entries }: Props) {
             {session.project_path}
           </div>
           <div className={styles.meta}>
-            <select
-              className={styles.modelSelect}
-              value={session.model ?? ""}
-              onChange={(e) =>
-                updateSession(session.id, { model: e.target.value || null })
-              }
-            >
-              {MODEL_OPTIONS.map((m) => (
-                <option key={m.label} value={m.value ?? ""}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
+            <Dropdown
+              size="sm"
+              ariaLabel="Model"
+              options={MODEL_OPTIONS}
+              value={session.model ?? null}
+              onChange={(v) => updateSession(session.id, { model: v })}
+            />
             <span className={styles.dot}>•</span>
             <span className={styles[session.status]}>{session.status}</span>
             <span className={styles.dot}>•</span>

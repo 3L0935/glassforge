@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { LazyStore } from "@tauri-apps/plugin-store";
 
 import * as log from "@/lib/log";
-import { setKdeBlur } from "@/lib/tauri-commands";
+import { setKdeBlur, setKdeBlurStrength } from "@/lib/tauri-commands";
 import { applyTheme, DEFAULT_THEME, PRESETS, type ThemeVars } from "@/lib/theme";
 
 const STORE_FILE = "settings.json";
@@ -46,6 +46,21 @@ async function syncKdeBlur(enabled: boolean): Promise<void> {
   } catch (e) {
     log.warn("set_kde_blur failed", e);
   }
+}
+
+// Debounce the kwriteconfig/qdbus call so dragging the slider doesn't
+// spawn dozens of child processes per second.
+let blurStrengthTimer: number | null = null;
+function scheduleBlurStrength(strength: number): void {
+  if (blurStrengthTimer !== null) {
+    window.clearTimeout(blurStrengthTimer);
+  }
+  blurStrengthTimer = window.setTimeout(() => {
+    blurStrengthTimer = null;
+    setKdeBlurStrength(strength).catch((e) =>
+      log.warn("set_kde_blur_strength failed", e),
+    );
+  }, 250);
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
@@ -99,6 +114,12 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       delta.kdeBlurEnabled !== prev.kdeBlurEnabled
     ) {
       await syncKdeBlur(delta.kdeBlurEnabled);
+    }
+    if (
+      delta.kdeBlurStrength !== undefined &&
+      delta.kdeBlurStrength !== prev.kdeBlurStrength
+    ) {
+      scheduleBlurStrength(delta.kdeBlurStrength);
     }
   },
 
