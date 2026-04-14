@@ -8,7 +8,6 @@ import {
   Terminal,
   X,
 } from "lucide-react";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { homeDir } from "@tauri-apps/api/path";
 
 import * as log from "@/lib/log";
@@ -19,6 +18,7 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { SessionCard } from "@/components/sessions/SessionCard";
 import { SkillsPanel } from "@/components/skills/SkillsPanel";
 import { UsagePanel } from "@/components/stats/UsagePanel";
+import { ProjectPicker } from "@/components/ui/ProjectPicker";
 
 import styles from "./Sidebar.module.css";
 
@@ -41,6 +41,7 @@ export function Sidebar() {
   const [projectPath, setProjectPath] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     void historyLoad();
@@ -62,24 +63,15 @@ export function Sidebar() {
     };
   }, []);
 
-  async function onBrowse() {
-    try {
-      const start = projectPath || (await homeDir().catch(() => ""));
-      const picked = await openDialog({
-        directory: true,
-        multiple: false,
-        defaultPath: start || undefined,
-        title: "Pick a project directory",
-      });
-      if (typeof picked === "string" && picked.length > 0) {
-        setProjectPath(picked);
-        setErr(null);
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setErr(msg);
-      log.error("dialog.open failed", msg);
-    }
+  function onBrowse() {
+    setErr(null);
+    setPickerOpen(true);
+  }
+
+  function onPickerSelect(path: string) {
+    setProjectPath(path);
+    setPickerOpen(false);
+    setErr(null);
   }
 
   async function spawnSession(path: string) {
@@ -128,7 +120,7 @@ export function Sidebar() {
           <button
             type="button"
             className={styles.browseButton}
-            onClick={() => void onBrowse()}
+            onClick={onBrowse}
             aria-label="Browse for a project directory"
             title="Browse…"
           >
@@ -249,6 +241,14 @@ export function Sidebar() {
         {tab === "usage" && <UsagePanel />}
         {tab === "skills" && <SkillsPanel />}
       </div>
+
+      {pickerOpen ? (
+        <ProjectPicker
+          initialPath={projectPath || undefined}
+          onSelect={onPickerSelect}
+          onClose={() => setPickerOpen(false)}
+        />
+      ) : null}
     </aside>
   );
 }

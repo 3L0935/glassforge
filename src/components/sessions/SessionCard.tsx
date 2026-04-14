@@ -1,8 +1,9 @@
 import { X } from "lucide-react";
 
 import * as log from "@/lib/log";
-import { killSession } from "@/lib/tauri-commands";
+import { removeSession as removeSessionCmd } from "@/lib/tauri-commands";
 import type { SessionInfo } from "@/lib/types";
+import { useSessionStore } from "@/stores/sessionStore";
 
 import styles from "./SessionCard.module.css";
 
@@ -16,14 +17,20 @@ export function SessionCard({ session, active, onSelect }: Props) {
   const projectName =
     session.project_path.split("/").filter(Boolean).pop() ??
     session.project_path;
+  const removeFromStore = useSessionStore((s) => s.removeSession);
 
-  async function onKill(e: React.MouseEvent) {
+  async function onClose(e: React.MouseEvent) {
     e.stopPropagation();
+    // Tell the backend to kill any running child + drop the registry
+    // entry, then mirror that on the frontend store. Backend errors
+    // shouldn't leave the UI with a ghost session, so we unconditionally
+    // remove client-side after attempting the command.
     try {
-      await killSession(session.id);
+      await removeSessionCmd(session.id);
     } catch (err) {
-      log.error("kill_session failed", err);
+      log.warn("remove_session failed", err);
     }
+    removeFromStore(session.id);
   }
 
   return (
@@ -41,8 +48,9 @@ export function SessionCard({ session, active, onSelect }: Props) {
           className={styles.kill}
           role="button"
           tabIndex={-1}
-          aria-label="Kill session"
-          onClick={onKill}
+          aria-label="Close session"
+          title="Close session"
+          onClick={onClose}
         >
           <X size={12} />
         </span>

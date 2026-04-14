@@ -4,6 +4,7 @@ use tauri::{AppHandle, State, WebviewWindow};
 
 mod claude;
 mod config;
+mod fs_browse;
 mod kde;
 mod skills;
 
@@ -51,6 +52,7 @@ pub fn run() {
             uninstall_usage_hook,
             list_skills,
             install_skill,
+            list_dir,
             set_kde_blur,
             set_kde_blur_strength,
             detect_display_server,
@@ -137,6 +139,11 @@ fn list_skills() -> Result<Vec<Skill>, String> {
 #[tauri::command]
 fn install_skill(url: String) -> Result<Skill, String> {
     skills::install_skill_from_git(&url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_dir(path: String) -> Result<fs_browse::DirListing, String> {
+    fs_browse::list_dir(&path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
