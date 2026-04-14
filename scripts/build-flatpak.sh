@@ -6,8 +6,8 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${here}/flatpak"
 
 flatpak install -y --noninteractive --user flathub \
-  org.freedesktop.Platform//24.08 \
-  org.freedesktop.Sdk//24.08 \
+  org.gnome.Platform//46 \
+  org.gnome.Sdk//46 \
   org.freedesktop.Sdk.Extension.rust-stable//24.08 \
   org.freedesktop.Sdk.Extension.node20//24.08
 
