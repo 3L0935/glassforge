@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
-import { BarChart3, Clock, Plus, Sparkles, Terminal, X } from "lucide-react";
+import {
+  BarChart3,
+  Clock,
+  FolderOpen,
+  Plus,
+  Sparkles,
+  Terminal,
+  X,
+} from "lucide-react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { homeDir } from "@tauri-apps/api/path";
 
 import * as log from "@/lib/log";
 import { createSession } from "@/lib/tauri-commands";
@@ -36,6 +46,42 @@ export function Sidebar() {
     void historyLoad();
   }, [historyLoad]);
 
+  // Seed the input with $HOME on first mount so users don't start from
+  // an empty field. We only set it if the field is still blank.
+  useEffect(() => {
+    let cancelled = false;
+    homeDir()
+      .then((home) => {
+        if (!cancelled) {
+          setProjectPath((current) => (current ? current : home));
+        }
+      })
+      .catch((e) => log.warn("homeDir failed", e));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  async function onBrowse() {
+    try {
+      const start = projectPath || (await homeDir().catch(() => ""));
+      const picked = await openDialog({
+        directory: true,
+        multiple: false,
+        defaultPath: start || undefined,
+        title: "Pick a project directory",
+      });
+      if (typeof picked === "string" && picked.length > 0) {
+        setProjectPath(picked);
+        setErr(null);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setErr(msg);
+      log.error("dialog.open failed", msg);
+    }
+  }
+
   async function spawnSession(path: string) {
     const trimmed = path.trim();
     if (!trimmed) {
@@ -68,16 +114,27 @@ export function Sidebar() {
         <label className={styles.label} htmlFor="project-path">
           Project path
         </label>
-        <input
-          id="project-path"
-          className={styles.input}
-          type="text"
-          placeholder="/home/you/project"
-          value={projectPath}
-          onChange={(e) => setProjectPath(e.target.value)}
-          spellCheck={false}
-          autoComplete="off"
-        />
+        <div className={styles.pathRow}>
+          <input
+            id="project-path"
+            className={styles.input}
+            type="text"
+            placeholder="/home/you/project"
+            value={projectPath}
+            onChange={(e) => setProjectPath(e.target.value)}
+            spellCheck={false}
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            className={styles.browseButton}
+            onClick={() => void onBrowse()}
+            aria-label="Browse for a project directory"
+            title="Browse…"
+          >
+            <FolderOpen size={14} />
+          </button>
+        </div>
         <button
           type="button"
           className={styles.newButton}

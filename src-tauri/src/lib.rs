@@ -22,6 +22,7 @@ pub fn run() {
         )
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_dialog::init())
         .manage(Arc::new(SessionRegistry::new()))
         .setup(|app| {
             log::info!("glassforge starting up");
