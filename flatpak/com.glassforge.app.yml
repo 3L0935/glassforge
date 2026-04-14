@@ -15,7 +15,7 @@ finish-args:
   - --filesystem=home
   - --talk-name=org.kde.KWin
   - --talk-name=org.freedesktop.Notifications
-  - --env=PATH=/app/bin:/usr/bin:/home/user/.local/bin:/usr/local/bin
+  - --talk-name=org.freedesktop.Flatpak
 
 build-options:
   append-path: /usr/lib/sdk/node20/bin:/run/build/glassforge/rustup/bin:/run/build/glassforge/npm/bin

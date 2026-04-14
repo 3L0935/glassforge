@@ -152,7 +152,18 @@ pub fn send_message(
         )
     };
 
-    let mut cmd = Command::new("claude");
+    let in_flatpak = std::path::Path::new("/.flatpak-info").exists();
+    let mut cmd = if in_flatpak {
+        let mut c = Command::new("flatpak-spawn");
+        c.arg("--host");
+        c.arg(format!("--directory={}", project_path));
+        c.arg("claude");
+        c
+    } else {
+        let mut c = Command::new("claude");
+        c.current_dir(&project_path);
+        c
+    };
     cmd.arg("-p").arg(&message);
     cmd.args(["--output-format", "stream-json", "--verbose"]);
     if let Some(m) = &effective_model {
@@ -161,7 +172,6 @@ pub fn send_message(
     if let Some(sid) = &claude_session_id {
         cmd.args(["--resume", sid.as_str()]);
     }
-    cmd.current_dir(&project_path);
     cmd.stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
