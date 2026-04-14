@@ -1,8 +1,14 @@
-use tauri::Manager;
+use std::sync::Arc;
+
+use tauri::{AppHandle, Manager, State};
 
 mod claude;
 mod config;
 mod kde;
+
+use claude::{SessionInfo, SessionRegistry};
+
+type RegistryState<'r> = State<'r, Arc<SessionRegistry>>;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,6 +23,7 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .manage(Arc::new(SessionRegistry::new()))
         .setup(|app| {
             tracing::info!("glassforge starting up");
             #[cfg(debug_assertions)]
@@ -27,7 +34,13 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![health_check])
+        .invoke_handler(tauri::generate_handler![
+            health_check,
+            create_session,
+            send_message,
+            kill_session,
+            list_sessions,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -37,6 +50,35 @@ fn health_check() -> &'static str {
     "ok"
 }
 
+#[tauri::command]
+fn create_session(
+    app: AppHandle,
+    registry: RegistryState<'_>,
+    project_path: String,
+    model: Option<String>,
+) -> Result<SessionInfo, String> {
+    claude::create_session(registry.inner(), app, project_path, model).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn send_message(
+    registry: RegistryState<'_>,
+    session_id: String,
+    message: String,
+) -> Result<(), String> {
+    claude::send_message(registry.inner(), &session_id, &message).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn kill_session(registry: RegistryState<'_>, session_id: String) -> Result<(), String> {
+    claude::kill_session(registry.inner(), &session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_sessions(registry: RegistryState<'_>) -> Vec<SessionInfo> {
+    claude::list_sessions(registry.inner())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,5 +86,11 @@ mod tests {
     #[test]
     fn health_check_returns_ok() {
         assert_eq!(health_check(), "ok");
+    }
+
+    #[test]
+    fn list_sessions_on_empty_registry_is_empty() {
+        let registry = Arc::new(SessionRegistry::new());
+        assert!(claude::list_sessions(&registry).is_empty());
     }
 }
