@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { BarChart3, Plus, Terminal } from "lucide-react";
+import { BarChart3, Plus, Sparkles, Terminal } from "lucide-react";
 
 import * as log from "@/lib/log";
 import { createSession } from "@/lib/tauri-commands";
 import { useSessionStore } from "@/stores/sessionStore";
 
 import { SessionCard } from "@/components/sessions/SessionCard";
+import { SkillsPanel } from "@/components/skills/SkillsPanel";
 import { UsagePanel } from "@/components/stats/UsagePanel";
 
 import styles from "./Sidebar.module.css";
 
-type Tab = "sessions" | "usage";
+type Tab = "sessions" | "usage" | "skills";
 
 export function Sidebar() {
   const order = useSessionStore((s) => s.order);
@@ -78,24 +79,32 @@ export function Sidebar() {
           type="button"
           className={`${styles.tab} ${tab === "sessions" ? styles.tabActive : ""}`}
           onClick={() => setTab("sessions")}
+          aria-label="Sessions"
         >
           <Terminal size={12} />
-          <span>Sessions</span>
           <span className={styles.tabCount}>{order.length}</span>
         </button>
         <button
           type="button"
           className={`${styles.tab} ${tab === "usage" ? styles.tabActive : ""}`}
           onClick={() => setTab("usage")}
+          aria-label="Usage"
         >
           <BarChart3 size={12} />
-          <span>Usage</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tab} ${tab === "skills" ? styles.tabActive : ""}`}
+          onClick={() => setTab("skills")}
+          aria-label="Skills"
+        >
+          <Sparkles size={12} />
         </button>
       </div>
 
       <div className={styles.tabBody}>
-        {tab === "sessions" ? (
-          order.length === 0 ? (
+        {tab === "sessions" &&
+          (order.length === 0 ? (
             <p className={styles.empty}>No sessions yet.</p>
           ) : (
             <ul className={styles.list}>
@@ -113,10 +122,9 @@ export function Sidebar() {
                 );
               })}
             </ul>
-          )
-        ) : (
-          <UsagePanel />
-        )}
+          ))}
+        {tab === "usage" && <UsagePanel />}
+        {tab === "skills" && <SkillsPanel />}
       </div>
     </aside>
   );

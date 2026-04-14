@@ -5,8 +5,10 @@ use tauri::{AppHandle, Manager, State};
 mod claude;
 mod config;
 mod kde;
+mod skills;
 
 use claude::{SessionInfo, SessionRegistry};
+use skills::Skill;
 
 type RegistryState<'r> = State<'r, Arc<SessionRegistry>>;
 
@@ -40,6 +42,8 @@ pub fn run() {
             send_message,
             kill_session,
             list_sessions,
+            list_skills,
+            install_skill,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -77,6 +81,16 @@ fn kill_session(registry: RegistryState<'_>, session_id: String) -> Result<(), S
 #[tauri::command]
 fn list_sessions(registry: RegistryState<'_>) -> Vec<SessionInfo> {
     claude::list_sessions(registry.inner())
+}
+
+#[tauri::command]
+fn list_skills() -> Result<Vec<Skill>, String> {
+    skills::list_skills().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn install_skill(url: String) -> Result<Skill, String> {
+    skills::install_skill_from_git(&url).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]
