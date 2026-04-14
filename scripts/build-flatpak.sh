@@ -8,7 +8,6 @@ cd "${here}/flatpak"
 flatpak install -y --noninteractive --user flathub \
   org.gnome.Platform//46 \
   org.gnome.Sdk//46 \
-  org.freedesktop.Sdk.Extension.rust-stable//24.08 \
   org.freedesktop.Sdk.Extension.node20//24.08
 
 flatpak-builder --force-clean --user --install-deps-from=flathub \

@@ -3,7 +3,6 @@ runtime: org.gnome.Platform
 runtime-version: '46'
 sdk: org.gnome.Sdk
 sdk-extensions:
-  - org.freedesktop.Sdk.Extension.rust-stable
   - org.freedesktop.Sdk.Extension.node20
 command: glassforge
 
@@ -19,12 +18,13 @@ finish-args:
   - --env=PATH=/app/bin:/usr/bin:/home/user/.local/bin:/usr/local/bin
 
 build-options:
-  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node20/bin:/run/build/glassforge/npm/bin
+  append-path: /usr/lib/sdk/node20/bin:/run/build/glassforge/rustup/bin:/run/build/glassforge/npm/bin
   build-args:
     - --share=network
   env:
     CI: "true"
-    CARGO_HOME: /run/build/glassforge/cargo
+    RUSTUP_HOME: /run/build/glassforge/rustup
+    CARGO_HOME: /run/build/glassforge/rustup
     NPM_CONFIG_PREFIX: /run/build/glassforge/npm
     PNPM_HOME: /run/build/glassforge/pnpm
     PNPM_STORE_DIR: /run/build/glassforge/pnpm-store
@@ -33,6 +33,7 @@ modules:
   - name: glassforge
     buildsystem: simple
     build-commands:
+      - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.0 --profile minimal --no-modify-path
       - npm install -g pnpm
       - pnpm install --frozen-lockfile || pnpm install
       - pnpm build
