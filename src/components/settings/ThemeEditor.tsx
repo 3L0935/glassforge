@@ -147,7 +147,7 @@ export function ThemeEditor() {
           label="Enable KDE blur behind window"
           value={vars.kdeBlurEnabled}
           onChange={patchFn("kdeBlurEnabled")}
-          hint="Requires KDE Plasma. Restart after toggling."
+          hint="Requires KDE Plasma. GlassForge launches under Xwayland by default so KWin can honor the X11 blur atom."
         />
       </section>
 
@@ -173,15 +173,6 @@ export function ThemeEditor() {
           step={1}
           format={(v) => `${v}px`}
           onChange={patchFn("fontSizeBase")}
-        />
-        <SliderRow
-          label="Corner radius"
-          value={vars.radiusMd}
-          min={4}
-          max={24}
-          step={1}
-          format={(v) => `${v}px`}
-          onChange={patchFn("radiusMd")}
         />
       </section>
 

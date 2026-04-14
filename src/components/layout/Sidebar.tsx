@@ -34,7 +34,8 @@ export function Sidebar() {
     setErr(null);
     setBusy(true);
     try {
-      const info = await createSession(path);
+      // Model is picked on-the-fly from the ChatView header.
+      const info = await createSession(path, null);
       addSession(info);
       setActive(info.id);
     } catch (e) {

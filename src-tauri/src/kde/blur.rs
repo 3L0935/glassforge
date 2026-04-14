@@ -1,11 +1,17 @@
 //! Tells KWin to blur the region behind a Tauri window by setting the
-//! `_KDE_NET_WM_BLUR_BEHIND_REGION` X11 atom. An empty CARDINAL region
-//! is interpreted by KWin as "blur the entire window". Wayland support
-//! requires the private `org_kde_kwin_blur_manager` protocol and is
-//! not implemented here yet — on Wayland the call returns a descriptive
-//! error so the UI can surface it to the user.
+//! `_KDE_NET_WM_BLUR_BEHIND_REGION` X11 atom. An empty CARDINAL region is
+//! interpreted by KWin as "blur the entire window".
+//!
+//! On Wayland sessions this code path is selected automatically when the
+//! app is run under Xwayland (GlassForge forces `GDK_BACKEND=x11` at
+//! startup to make this possible — KWin honors the X11 blur atom for
+//! Xwayland clients just as well as for native X11 clients).
+//!
+//! Native Wayland blur would require binding the private
+//! `org_kde_kwin_blur_manager` protocol to Tauri's existing `wl_surface`,
+//! which is tracked for a future release.
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
 use tauri::WebviewWindow;
 use x11rb::connection::Connection;
@@ -30,28 +36,18 @@ pub fn detect_session_type() -> SessionType {
 }
 
 pub fn apply_blur(window: &WebviewWindow, enabled: bool) -> Result<()> {
-    match detect_session_type() {
-        SessionType::X11 => {
-            let xid = get_xid(window)?;
-            set_kde_blur_x11(xid, enabled)?;
-            Ok(())
-        }
-        SessionType::Wayland => Err(anyhow!(
-            "KDE blur on Wayland is not yet supported. Enable blur in System \
-             Settings → Workspace Behavior → Compositor, or run GlassForge on X11."
-        )),
-        SessionType::Unknown => Err(anyhow!("no display server detected (DISPLAY / WAYLAND_DISPLAY unset)")),
-    }
-}
-
-fn get_xid(window: &WebviewWindow) -> Result<u32> {
     let handle = window
         .window_handle()
         .map_err(|e| anyhow!("window_handle: {e}"))?;
     match handle.as_raw() {
-        RawWindowHandle::Xlib(h) => Ok(h.window as u32),
+        RawWindowHandle::Xlib(h) => {
+            set_kde_blur_x11(h.window as u32, enabled)?;
+            Ok(())
+        }
         RawWindowHandle::Wayland(_) => Err(anyhow!(
-            "window handle is a Wayland surface; X11 atom path does not apply"
+            "GlassForge is running as a native Wayland client. KDE blur on \
+             Wayland is not implemented yet. Relaunch with \
+             `GDK_BACKEND=x11 glassforge` to get KWin blur via Xwayland."
         )),
         other => Err(anyhow!("unsupported window handle variant: {other:?}")),
     }
@@ -96,17 +92,5 @@ mod tests {
     #[test]
     fn session_type_detection_does_not_panic() {
         let _ = detect_session_type();
-    }
-
-    #[test]
-    fn session_type_prefers_wayland_when_both_set() {
-        // Can't unset env vars safely in parallel tests; instead verify
-        // the function terminates for whatever the current env looks
-        // like. The real logic is exercised via integration runs.
-        let t = detect_session_type();
-        assert!(matches!(
-            t,
-            SessionType::Wayland | SessionType::X11 | SessionType::Unknown
-        ));
     }
 }

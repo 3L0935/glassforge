@@ -112,14 +112,35 @@
 }
 
 .select {
-  padding: 0.4rem 0.5rem;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 0.45rem 2rem 0.45rem 0.65rem;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-size: 0.72rem;
   font-family: var(--font-sans);
   min-width: 180px;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%23a0a0b0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.select:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.select:focus {
+  border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
+}
+
+.select option {
+  background: #1a1830;
+  color: var(--text-primary);
 }
 
 .checkbox {

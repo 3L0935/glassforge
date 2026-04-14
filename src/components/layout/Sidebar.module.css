@@ -5,8 +5,10 @@
   min-width: var(--sidebar-width);
   height: 100%;
   padding: 1rem 0.75rem 0.75rem;
-  background: var(--sidebar-bg);
+  background: var(--glass-bg);
   border-right: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   overflow: hidden;
 }
 
@@ -41,6 +43,53 @@
 .input:focus {
   border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
   background: rgba(255, 255, 255, 0.05);
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modelLabel {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-left: 0.2rem;
+}
+
+.modelSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 1.6rem 0.4rem 0.55rem;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%23a0a0b0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.modelSelect:hover {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+.modelSelect:focus {
+  border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
+}
+
+.modelSelect option {
+  background: #1a1830;
+  color: var(--text-primary);
 }
 
 .newButton {

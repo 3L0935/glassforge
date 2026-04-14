@@ -59,3 +59,12 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+.cancelButton {
+  background: color-mix(in srgb, var(--accent-danger) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent-danger) 45%, transparent);
+}
+
+.cancelButton:hover {
+  background: color-mix(in srgb, var(--accent-danger) 34%, transparent);
+}

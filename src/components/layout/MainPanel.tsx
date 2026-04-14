@@ -1,4 +1,4 @@
-import type { SessionEntry } from "@/lib/types";
+import type { ChatEntry } from "@/lib/types";
 import { useSessionStore } from "@/stores/sessionStore";
 import { ChatView } from "@/components/sessions/ChatView";
 import { ComposeInput } from "@/components/sessions/ComposeInput";
@@ -9,7 +9,7 @@ import styles from "./MainPanel.module.css";
 // call creates a new reference, which trips zustand's useSyncExternalStore
 // into thinking the snapshot changed, producing an infinite update loop
 // (React error #185). Use one frozen reference for the "no entries" case.
-const EMPTY_ENTRIES: readonly SessionEntry[] = Object.freeze([]);
+const EMPTY_ENTRIES: readonly ChatEntry[] = Object.freeze([]);
 
 export function MainPanel() {
   const activeId = useSessionStore((s) => s.activeId);
@@ -18,7 +18,7 @@ export function MainPanel() {
   );
   const activeEntries = useSessionStore((s) =>
     s.activeId ? (s.entries[s.activeId] ?? EMPTY_ENTRIES) : EMPTY_ENTRIES,
-  ) as SessionEntry[];
+  ) as ChatEntry[];
 
   void activeId;
   if (!activeSession) {
@@ -34,8 +34,7 @@ export function MainPanel() {
     );
   }
 
-  const disabled =
-    activeSession.status === "done" || activeSession.status === "error";
+  const disabled = activeSession.status === "error";
 
   return (
     <main className={styles.root}>

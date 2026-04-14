@@ -1,6 +1,7 @@
 :root {
   /* ── Base ── */
-  --bg-primary: rgba(12, 10, 26, 1);
+  --bg-primary: #0c0a1a;
+  --bg-primary-rgb: 12, 10, 26;
   --bg-secondary: rgba(255, 255, 255, 0.04);
   --text-primary: rgba(255, 255, 255, 0.9);
   --text-secondary: rgba(255, 255, 255, 0.5);
@@ -22,7 +23,7 @@
 
   /* ── Window ── */
   --window-opacity: 1;
-  --window-bg-opacity: 0.95;
+  --window-bg-opacity: 0.7;
 
   /* ── Blur ── */
   --blur-enabled: 1;

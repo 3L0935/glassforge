@@ -41,6 +41,7 @@ pub fn run() {
             create_session,
             send_message,
             kill_session,
+            remove_session,
             list_sessions,
             list_skills,
             install_skill,
@@ -58,26 +59,33 @@ fn health_check() -> &'static str {
 
 #[tauri::command]
 fn create_session(
-    app: AppHandle,
     registry: RegistryState<'_>,
     project_path: String,
     model: Option<String>,
 ) -> Result<SessionInfo, String> {
-    claude::create_session(registry.inner(), app, project_path, model).map_err(|e| e.to_string())
+    claude::create_session(registry.inner(), project_path, model).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn send_message(
+    app: AppHandle,
     registry: RegistryState<'_>,
     session_id: String,
     message: String,
+    model: Option<String>,
 ) -> Result<(), String> {
-    claude::send_message(registry.inner(), &session_id, &message).map_err(|e| e.to_string())
+    claude::send_message(registry.inner(), app, &session_id, message, model)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 fn kill_session(registry: RegistryState<'_>, session_id: String) -> Result<(), String> {
     claude::kill_session(registry.inner(), &session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn remove_session(registry: RegistryState<'_>, session_id: String) -> Result<(), String> {
+    claude::remove_session(registry.inner(), &session_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

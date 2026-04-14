@@ -20,7 +20,9 @@
   flex-direction: column;
   width: min(460px, 100%);
   height: 100%;
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  background: rgba(var(--bg-primary-rgb), 0.85);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   border-left: 1px solid var(--glass-border);
   box-shadow: -20px 0 60px rgba(0, 0, 0, 0.6);
   animation: slide 0.22s ease;

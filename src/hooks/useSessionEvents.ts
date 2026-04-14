@@ -2,11 +2,7 @@ import { useEffect } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import * as log from "@/lib/log";
-import type {
-  ExitPayload,
-  SessionStatus,
-  StdoutChunkPayload,
-} from "@/lib/types";
+import type { ClaudeEvent, SessionStatus } from "@/lib/types";
 import { useSessionStore } from "@/stores/sessionStore";
 
 // Subscribes the sessionStore to Tauri events for every known session.
@@ -14,10 +10,8 @@ import { useSessionStore } from "@/stores/sessionStore";
 // listeners and installing fresh ones in lockstep.
 export function useSessionEvents(): void {
   const order = useSessionStore((s) => s.order);
-  const appendStdout = useSessionStore((s) => s.appendStdout);
+  const handleClaudeEvent = useSessionStore((s) => s.handleClaudeEvent);
   const updateStatus = useSessionStore((s) => s.updateStatus);
-  const appendSystem = useSessionStore((s) => s.appendSystem);
-  const removeSession = useSessionStore((s) => s.removeSession);
 
   useEffect(() => {
     const unlisteners: UnlistenFn[] = [];
@@ -25,27 +19,18 @@ export function useSessionEvents(): void {
 
     async function attach() {
       for (const id of order) {
-        const stdoutEvent = `session://${id}/stdout`;
+        const eventEvent = `session://${id}/event`;
         const statusEvent = `session://${id}/status`;
-        const exitEvent = `session://${id}/exit`;
+        const doneEvent = `session://${id}/done`;
 
-        const u1 = await listen<StdoutChunkPayload>(stdoutEvent, (e) => {
-          appendStdout(id, e.payload.data);
+        const u1 = await listen<ClaudeEvent>(eventEvent, (e) => {
+          handleClaudeEvent(id, e.payload);
         });
         const u2 = await listen<SessionStatus>(statusEvent, (e) => {
           updateStatus(id, e.payload);
         });
-        const u3 = await listen<ExitPayload>(exitEvent, (e) => {
-          const code = e.payload.code;
-          appendSystem(
-            id,
-            `\n[session exited${code !== null ? ` with code ${code}` : ""}]\n`,
-          );
-          // Keep the session on screen for a moment so the user can see the
-          // final output, then drop it from the registry on the UI side.
-          setTimeout(() => {
-            if (!cancelled) removeSession(id);
-          }, 1500);
+        const u3 = await listen<unknown>(doneEvent, () => {
+          // Reserved for future per-message completion UX.
         });
 
         if (cancelled) {
@@ -70,5 +55,5 @@ export function useSessionEvents(): void {
         }
       }
     };
-  }, [order, appendStdout, updateStatus, appendSystem, removeSession]);
+  }, [order, handleClaudeEvent, updateStatus]);
 }

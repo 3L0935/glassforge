@@ -18,12 +18,21 @@ export async function createSession(
 export async function sendMessage(
   sessionId: string,
   message: string,
+  model?: string | null,
 ): Promise<void> {
-  return invoke<void>("send_message", { sessionId, message });
+  return invoke<void>("send_message", {
+    sessionId,
+    message,
+    model: model ?? null,
+  });
 }
 
 export async function killSession(sessionId: string): Promise<void> {
   return invoke<void>("kill_session", { sessionId });
+}
+
+export async function removeSession(sessionId: string): Promise<void> {
+  return invoke<void>("remove_session", { sessionId });
 }
 
 export async function listSessions(): Promise<SessionInfo[]> {

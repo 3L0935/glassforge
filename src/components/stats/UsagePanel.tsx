@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import {
-  estimateCostUsd,
   estimateTokens,
   formatCost,
   formatTokens,
@@ -34,12 +33,10 @@ function aggregate(
   for (const id of Object.keys(sessions)) {
     const u = usage[id];
     if (!u) continue;
-    const inT = estimateTokens(u.bytesIn);
-    const outT = estimateTokens(u.bytesOut);
-    tokensIn += inT;
-    tokensOut += outT;
+    tokensIn += estimateTokens(u.bytesIn);
+    tokensOut += estimateTokens(u.bytesOut);
     messages += u.messages;
-    costUsd += estimateCostUsd(sessions[id]?.model ?? null, outT, inT);
+    costUsd += u.totalCostUsd;
   }
   return { tokensIn, tokensOut, messages, costUsd };
 }
@@ -106,7 +103,7 @@ export function UsagePanel() {
               if (!s || !u) return null;
               const inT = estimateTokens(u.bytesIn);
               const outT = estimateTokens(u.bytesOut);
-              const cost = estimateCostUsd(s.model ?? null, outT, inT);
+              const cost = u.totalCostUsd;
               const p = resolvePricing(s.model ?? null);
               return (
                 <li key={id} className={styles.listItem}>

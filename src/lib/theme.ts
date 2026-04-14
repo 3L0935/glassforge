@@ -35,7 +35,7 @@ export const DEFAULT_THEME: ThemeVars = {
   glassSaturation: 1.6,
   glassBgOpacity: 0.04,
 
-  windowBgOpacity: 0.95,
+  windowBgOpacity: 0.7,
   kdeBlurEnabled: false,
 
   fontSans:
@@ -134,6 +134,7 @@ export function applyTheme(vars: ThemeVars): void {
   const set = (k: string, v: string) => root.style.setProperty(k, v);
 
   set("--bg-primary", vars.bgPrimary);
+  set("--bg-primary-rgb", hexToRgbTriplet(vars.bgPrimary));
 
   set("--accent-primary", vars.accentPrimary);
   set("--accent-secondary", vars.accentSecondary);
@@ -153,4 +154,23 @@ export function applyTheme(vars: ThemeVars): void {
   set("--radius-md", `${vars.radiusMd}px`);
   set("--radius-sm", `${Math.max(4, vars.radiusMd - 4)}px`);
   set("--radius-lg", `${vars.radiusMd + 4}px`);
+}
+
+// Accepts `#rgb`, `#rrggbb`, or falls back to `0, 0, 0` if we can't parse.
+// Used so CSS can compose `rgba(var(--bg-primary-rgb), <alpha>)` without
+// relying on color-mix support.
+function hexToRgbTriplet(hex: string): string {
+  let s = hex.trim().replace(/^#/, "");
+  if (s.length === 3) {
+    s = s
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+  if (s.length !== 6) return "0, 0, 0";
+  const r = parseInt(s.slice(0, 2), 16);
+  const g = parseInt(s.slice(2, 4), 16);
+  const b = parseInt(s.slice(4, 6), 16);
+  if ([r, g, b].some((n) => Number.isNaN(n))) return "0, 0, 0";
+  return `${r}, ${g}, ${b}`;
 }

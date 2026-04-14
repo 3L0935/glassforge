@@ -1,32 +1,40 @@
-//! Session lifecycle: spawn `claude`, attach a PTY, stream stdout,
-//! route stdin, track status.
+//! Session manager (stream-json architecture).
 //!
-//! A `SessionRegistry` owns all live sessions. Each session has its own
-//! OS thread dedicated to blocking PTY reads; chunks are emitted on the
-//! Tauri event bus as `session://{id}/stdout`, status transitions on
-//! `session://{id}/status`, and the final exit code on `session://{id}/exit`.
+//! Each user message spawns a fresh `claude -p <msg> --output-format stream-json`
+//! child process and streams the parsed JSON events to the frontend. Claude's
+//! own session id is captured from the `system/init` event and threaded through
+//! subsequent invocations via `--resume <sid>` so the conversation continues.
+//!
+//! Events emitted on the Tauri bus (per session id `sid`):
+//!   - `session://{sid}/status`  → `SessionStatus` transitions
+//!   - `session://{sid}/event`   → raw stream-json payload (or synthetic frames)
+//!   - `session://{sid}/done`    → emitted once per send_message when the child exits
+//!
+//! The reader thread owns the child process: kill_session just acquires the
+//! mutex, flips `child.kill()`, and lets the reader finish draining stdout
+//! before `wait()` reaps the zombie.
 
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
-use portable_pty::{Child, ChildKiller, CommandBuilder, NativePtySystem, PtySize, PtySystem};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum SessionStatus {
-    Starting,
-    Active,
     Idle,
-    Done,
+    Running,
     Error,
+    Done,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,25 +42,14 @@ pub struct SessionInfo {
     pub id: String,
     pub project_path: String,
     pub model: Option<String>,
+    pub claude_session_id: Option<String>,
     pub status: SessionStatus,
     pub created_at: u64,
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct StdoutChunk {
-    data: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct ExitPayload {
-    code: Option<i32>,
-    success: bool,
-}
-
 pub struct SessionHandle {
     info: Mutex<SessionInfo>,
-    writer: Mutex<Box<dyn Write + Send>>,
-    killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
+    child: Mutex<Option<Child>>,
 }
 
 impl SessionHandle {
@@ -103,65 +100,8 @@ fn now_secs() -> u64 {
         .unwrap_or(0)
 }
 
-type PtyBundle = (
-    Box<dyn Read + Send>,
-    Box<dyn Write + Send>,
-    Box<dyn ChildKiller + Send + Sync>,
-    Box<dyn Child + Send + Sync>,
-);
-
-/// Open a PTY and spawn `cmd` inside it. Returns the reader, writer,
-/// a cloned killer, and the child handle (for `wait()`). Exposed at
-/// crate level so tests can exercise the PTY path without needing
-/// a Tauri `AppHandle`.
-fn spawn_pty(cmd: CommandBuilder) -> Result<PtyBundle> {
-    let pty_system = NativePtySystem::default();
-    let pair = pty_system
-        .openpty(PtySize {
-            rows: 40,
-            cols: 120,
-            pixel_width: 0,
-            pixel_height: 0,
-        })
-        .context("failed to open pty")?;
-
-    let child = pair
-        .slave
-        .spawn_command(cmd)
-        .context("failed to spawn command in pty")?;
-    drop(pair.slave);
-
-    let reader = pair
-        .master
-        .try_clone_reader()
-        .context("failed to clone pty reader")?;
-    let writer = pair
-        .master
-        .take_writer()
-        .context("failed to take pty writer")?;
-    let killer = child.clone_killer();
-
-    Ok((reader, writer, killer, child))
-}
-
-fn build_claude_command(project_path: &PathBuf, model: Option<&str>) -> CommandBuilder {
-    let mut cmd = CommandBuilder::new("claude");
-    if let Some(m) = model {
-        cmd.args(["--model", m]);
-    }
-    cmd.cwd(project_path);
-    // PTY command builders start with an empty environment; inherit the
-    // parent process env so `claude` can read `$HOME`, `$PATH`, and its
-    // own auth files.
-    for (k, v) in std::env::vars() {
-        cmd.env(k, v);
-    }
-    cmd
-}
-
 pub fn create_session(
-    registry: &Arc<SessionRegistry>,
-    app: AppHandle,
+    registry: &SessionRegistry,
     project_path: String,
     model: Option<String>,
 ) -> Result<SessionInfo> {
@@ -170,129 +110,232 @@ pub fn create_session(
         return Err(anyhow!("project_path is not a directory: {}", project_path));
     }
 
-    let cmd = build_claude_command(&path, model.as_deref());
-    let (reader, writer, killer, child) = spawn_pty(cmd)?;
-
     let id = Uuid::now_v7().to_string();
     let info = SessionInfo {
         id: id.clone(),
         project_path,
         model,
-        status: SessionStatus::Starting,
+        claude_session_id: None,
+        status: SessionStatus::Idle,
         created_at: now_secs(),
     };
 
     let handle = Arc::new(SessionHandle {
         info: Mutex::new(info.clone()),
-        writer: Mutex::new(writer),
-        killer: Mutex::new(killer),
+        child: Mutex::new(None),
     });
 
-    registry.insert(id.clone(), handle.clone());
-
-    let reader_app = app.clone();
-    let reader_id = id.clone();
-    let reader_handle = handle.clone();
-    let reader_registry = registry.clone();
-
-    thread::Builder::new()
-        .name(format!("glassforge-pty-{id}"))
-        .spawn(move || {
-            read_loop(
-                reader_app,
-                reader_id,
-                reader,
-                child,
-                reader_handle,
-                reader_registry,
-            );
-        })
-        .context("failed to spawn pty reader thread")?;
-
+    registry.insert(id, handle);
     Ok(info)
 }
 
-fn read_loop(
+pub fn send_message(
+    registry: &Arc<SessionRegistry>,
     app: AppHandle,
-    id: String,
-    mut reader: Box<dyn Read + Send>,
-    mut child: Box<dyn Child + Send + Sync>,
-    handle: Arc<SessionHandle>,
-    registry: Arc<SessionRegistry>,
-) {
-    let stdout_event = format!("session://{id}/stdout");
-    let status_event = format!("session://{id}/status");
-    let exit_event = format!("session://{id}/exit");
-
-    set_status(&handle, SessionStatus::Active);
-    let _ = app.emit(&status_event, SessionStatus::Active);
-
-    let mut buf = [0u8; 8192];
-    loop {
-        match reader.read(&mut buf) {
-            Ok(0) => break,
-            Ok(n) => {
-                let chunk = String::from_utf8_lossy(&buf[..n]).into_owned();
-                let _ = app.emit(&stdout_event, StdoutChunk { data: chunk });
-            }
-            Err(e) => {
-                log::warn!("pty read error on session {id}: {e}");
-                set_status(&handle, SessionStatus::Error);
-                let _ = app.emit(&status_event, SessionStatus::Error);
-                break;
-            }
-        }
-    }
-
-    let status = child.wait().ok();
-    let code = status.map(|s| s.exit_code() as i32);
-    let success = code == Some(0);
-
-    set_status(&handle, SessionStatus::Done);
-    let _ = app.emit(&status_event, SessionStatus::Done);
-    let _ = app.emit(&exit_event, ExitPayload { code, success });
-
-    registry.remove(&id);
-}
-
-fn set_status(handle: &SessionHandle, status: SessionStatus) {
-    if let Ok(mut info) = handle.info.lock() {
-        info.status = status;
-    }
-}
-
-pub fn send_message(registry: &SessionRegistry, id: &str, message: &str) -> Result<()> {
+    id: &str,
+    message: String,
+    model_override: Option<String>,
+) -> Result<()> {
     let handle = registry
         .get(id)
         .ok_or_else(|| anyhow!("session not found: {id}"))?;
-    let mut writer = handle
-        .writer
-        .lock()
-        .map_err(|_| anyhow!("writer lock poisoned"))?;
-    writer
-        .write_all(message.as_bytes())
-        .context("failed to write to pty")?;
-    if !message.ends_with('\n') {
-        writer.write_all(b"\n").context("failed to write newline")?;
+
+    let (project_path, effective_model, claude_session_id) = {
+        let info = handle
+            .info
+            .lock()
+            .map_err(|_| anyhow!("info lock poisoned"))?;
+        (
+            info.project_path.clone(),
+            model_override.clone().or_else(|| info.model.clone()),
+            info.claude_session_id.clone(),
+        )
+    };
+
+    let mut cmd = Command::new("claude");
+    cmd.arg("-p").arg(&message);
+    cmd.args(["--output-format", "stream-json", "--verbose"]);
+    if let Some(m) = &effective_model {
+        cmd.args(["--model", m.as_str()]);
     }
-    writer.flush().context("failed to flush pty")?;
+    if let Some(sid) = &claude_session_id {
+        cmd.args(["--resume", sid.as_str()]);
+    }
+    cmd.current_dir(&project_path);
+    cmd.stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+
+    let mut child = cmd.spawn().context("failed to spawn claude")?;
+    let stdout = child.stdout.take().context("no stdout on child")?;
+    let stderr = child.stderr.take().context("no stderr on child")?;
+
+    // Stamp the session with the chosen model now, before the child starts
+    // producing output, so the UI reflects "currently running model" right
+    // away.
+    {
+        let mut info = handle
+            .info
+            .lock()
+            .map_err(|_| anyhow!("info lock poisoned"))?;
+        info.status = SessionStatus::Running;
+        if let Some(m) = effective_model {
+            info.model = Some(m);
+        }
+    }
+
+    {
+        let mut slot = handle
+            .child
+            .lock()
+            .map_err(|_| anyhow!("child lock poisoned"))?;
+        *slot = Some(child);
+    }
+
+    let status_event = format!("session://{id}/status");
+    let event_event = format!("session://{id}/event");
+    let done_event = format!("session://{id}/done");
+
+    let _ = app.emit(&status_event, SessionStatus::Running);
+
+    // Echo the user's prompt as a synthetic event so the chat UI can render
+    // it immediately without waiting for claude to ack.
+    let _ = app.emit(
+        &event_event,
+        serde_json::json!({
+            "type": "user_text",
+            "text": message,
+        }),
+    );
+
+    // Stderr drain — runs in its own tiny thread so we can show stderr lines
+    // without blocking stdout parsing.
+    let stderr_app = app.clone();
+    let stderr_event = event_event.clone();
+    thread::Builder::new()
+        .name(format!("glassforge-claude-stderr-{id}"))
+        .spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                if line.is_empty() {
+                    continue;
+                }
+                let _ = stderr_app.emit(
+                    &stderr_event,
+                    serde_json::json!({
+                        "type": "stderr",
+                        "text": line,
+                    }),
+                );
+            }
+        })
+        .context("failed to spawn stderr reader thread")?;
+
+    // Stdout reader — parses each line as JSON, emits to the frontend, and
+    // captures claude's session id from the init event so subsequent calls
+    // can pass `--resume`.
+    let reader_app = app.clone();
+    let reader_id = id.to_string();
+    let reader_handle = handle.clone();
+    thread::Builder::new()
+        .name(format!("glassforge-claude-stdout-{id}"))
+        .spawn(move || {
+            let reader = BufReader::new(stdout);
+            for line in reader.lines().map_while(Result::ok) {
+                if line.trim().is_empty() {
+                    continue;
+                }
+                match serde_json::from_str::<Value>(&line) {
+                    Ok(val) => {
+                        capture_session_id(&reader_handle, &val);
+                        let _ = reader_app.emit(&event_event, val);
+                    }
+                    Err(_) => {
+                        let _ = reader_app.emit(
+                            &event_event,
+                            serde_json::json!({
+                                "type": "raw",
+                                "text": line,
+                            }),
+                        );
+                    }
+                }
+            }
+
+            // stdout closed — reap the child so we don't leave a zombie.
+            let reaped = {
+                let mut slot = reader_handle.child.lock().ok();
+                slot.as_mut().and_then(|o| o.take())
+            };
+            let exit_ok = reaped
+                .map(|mut c| c.wait().map(|s| s.success()).unwrap_or(false))
+                .unwrap_or(false);
+
+            let next_status = if exit_ok {
+                SessionStatus::Idle
+            } else {
+                SessionStatus::Error
+            };
+            if let Ok(mut info) = reader_handle.info.lock() {
+                info.status = next_status;
+            }
+            let _ = reader_app.emit(&status_event, next_status);
+            let _ = reader_app.emit(
+                &done_event,
+                serde_json::json!({
+                    "session_id": reader_id,
+                    "ok": exit_ok,
+                }),
+            );
+        })
+        .context("failed to spawn stdout reader thread")?;
+
     Ok(())
+}
+
+fn capture_session_id(handle: &SessionHandle, val: &Value) {
+    let obj = match val.as_object() {
+        Some(o) => o,
+        None => return,
+    };
+    // claude's init line is `{"type":"system","subtype":"init","session_id":"..."}`.
+    // We also accept a session_id on any event as a best-effort fallback.
+    let sid = obj
+        .get("session_id")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+    if let Some(sid) = sid {
+        if let Ok(mut info) = handle.info.lock() {
+            if info.claude_session_id.as_deref() != Some(sid.as_str()) {
+                info.claude_session_id = Some(sid);
+            }
+        }
+    }
 }
 
 pub fn kill_session(registry: &SessionRegistry, id: &str) -> Result<()> {
     let handle = registry
         .get(id)
         .ok_or_else(|| anyhow!("session not found: {id}"))?;
-    let mut killer = handle
-        .killer
+    let mut slot = handle
+        .child
         .lock()
-        .map_err(|_| anyhow!("killer lock poisoned"))?;
-    killer.kill().context("failed to kill child")?;
+        .map_err(|_| anyhow!("child lock poisoned"))?;
+    if let Some(child) = slot.as_mut() {
+        child.kill().context("kill child")?;
+    }
     Ok(())
 }
 
 pub fn list_sessions(registry: &SessionRegistry) -> Vec<SessionInfo> {
     registry.list()
+}
+
+pub fn remove_session(registry: &SessionRegistry, id: &str) -> Result<()> {
+    // Ensure no child is still running before we drop the handle.
+    let _ = kill_session(registry, id);
+    registry.remove(id);
+    Ok(())
 }
 
 #[cfg(test)]
@@ -309,12 +352,12 @@ mod tests {
     #[test]
     fn status_serializes_lowercase() {
         assert_eq!(
-            serde_json::to_string(&SessionStatus::Active).unwrap(),
-            "\"active\""
+            serde_json::to_string(&SessionStatus::Running).unwrap(),
+            "\"running\""
         );
         assert_eq!(
-            serde_json::to_string(&SessionStatus::Done).unwrap(),
-            "\"done\""
+            serde_json::to_string(&SessionStatus::Idle).unwrap(),
+            "\"idle\""
         );
     }
 
@@ -324,59 +367,23 @@ mod tests {
     }
 
     #[test]
-    fn build_claude_command_includes_model_flag() {
-        let cb = build_claude_command(&PathBuf::from("/tmp"), Some("sonnet"));
-        let dbg = format!("{cb:?}");
-        assert!(dbg.contains("claude"));
-        assert!(dbg.contains("--model"));
-        assert!(dbg.contains("sonnet"));
-    }
-
-    /// End-to-end PTY round-trip using `/bin/cat`: write a line, expect
-    /// it echoed back. Verifies spawn, reader, writer, and killer.
-    #[cfg(unix)]
-    #[test]
-    fn pty_roundtrip_with_cat() {
-        use std::io::Read;
-        use std::time::Duration;
-
-        let mut cmd = CommandBuilder::new("/bin/cat");
-        cmd.cwd(std::env::temp_dir());
-        for (k, v) in std::env::vars() {
-            cmd.env(k, v);
-        }
-
-        let (mut reader, mut writer, mut killer, mut child) =
-            spawn_pty(cmd).expect("spawn /bin/cat");
-
-        writer.write_all(b"glassforge\n").unwrap();
-        writer.flush().unwrap();
-
-        // Read until we see our marker or give up after a bounded number
-        // of attempts. `cat` in a PTY echoes input + outputs it again.
-        let mut buf = [0u8; 256];
-        let mut collected = String::new();
-        for _ in 0..20 {
-            match reader.read(&mut buf) {
-                Ok(0) => break,
-                Ok(n) => {
-                    collected.push_str(&String::from_utf8_lossy(&buf[..n]));
-                    if collected.contains("glassforge") {
-                        break;
-                    }
-                }
-                Err(_) => {
-                    std::thread::sleep(Duration::from_millis(10));
-                }
-            }
-        }
-
-        assert!(
-            collected.contains("glassforge"),
-            "pty roundtrip failed, got: {collected:?}"
-        );
-
-        killer.kill().ok();
-        let _ = child.wait();
+    fn capture_session_id_updates_handle() {
+        let info = SessionInfo {
+            id: "local".to_string(),
+            project_path: "/tmp".to_string(),
+            model: None,
+            claude_session_id: None,
+            status: SessionStatus::Idle,
+            created_at: 0,
+        };
+        let handle = SessionHandle {
+            info: Mutex::new(info),
+            child: Mutex::new(None),
+        };
+        let val: Value =
+            serde_json::from_str(r#"{"type":"system","subtype":"init","session_id":"abc-123"}"#)
+                .unwrap();
+        capture_session_id(&handle, &val);
+        assert_eq!(handle.info().claude_session_id.as_deref(), Some("abc-123"));
     }
 }
