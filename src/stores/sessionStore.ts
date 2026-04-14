@@ -30,10 +30,18 @@ function emptyUsage(): SessionUsage {
   };
 }
 
+export type PendingPermission = {
+  requestId: string;
+  toolName: string;
+  toolInput: unknown;
+  receivedAt: number;
+};
+
 type SessionState = {
   sessions: Record<string, SessionInfo>;
   entries: Record<string, ChatEntry[]>;
   usage: Record<string, SessionUsage>;
+  pendingPermissions: Record<string, PendingPermission[]>;
   activeId: string | null;
   order: string[];
 
@@ -45,6 +53,8 @@ type SessionState = {
   appendUser: (id: string, text: string) => void;
   setActive: (id: string | null) => void;
   removeSession: (id: string) => void;
+  pushPermission: (sessionId: string, req: PendingPermission) => void;
+  resolvePermission: (sessionId: string, requestId: string) => void;
 };
 
 // Helper: extract text from a list of content blocks.
@@ -79,6 +89,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   sessions: {},
   entries: {},
   usage: {},
+  pendingPermissions: {},
   activeId: null,
   order: [],
 
@@ -354,12 +365,43 @@ export const useSessionStore = create<SessionState>((set) => ({
       const sessions = { ...s.sessions };
       const entries = { ...s.entries };
       const usage = { ...s.usage };
+      const pendingPermissions = { ...s.pendingPermissions };
       delete sessions[id];
       delete entries[id];
       delete usage[id];
+      delete pendingPermissions[id];
       const order = s.order.filter((x) => x !== id);
       const nextActive =
         s.activeId === id ? (order[0] ?? null) : s.activeId;
-      return { sessions, entries, usage, order, activeId: nextActive };
+      return {
+        sessions,
+        entries,
+        usage,
+        pendingPermissions,
+        order,
+        activeId: nextActive,
+      };
+    }),
+
+  pushPermission: (sessionId, req) =>
+    set((s) => {
+      const prev = s.pendingPermissions[sessionId] ?? [];
+      return {
+        pendingPermissions: {
+          ...s.pendingPermissions,
+          [sessionId]: [...prev, req],
+        },
+      };
+    }),
+
+  resolvePermission: (sessionId, requestId) =>
+    set((s) => {
+      const prev = s.pendingPermissions[sessionId] ?? [];
+      return {
+        pendingPermissions: {
+          ...s.pendingPermissions,
+          [sessionId]: prev.filter((p) => p.requestId !== requestId),
+        },
+      };
     }),
 }));

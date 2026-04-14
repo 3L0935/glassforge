@@ -154,10 +154,12 @@ pub fn create_session(
 
 pub fn send_message(
     registry: &Arc<SessionRegistry>,
+    broker: &Arc<crate::claude::permissions::PermissionBroker>,
     app: AppHandle,
     id: &str,
     message: String,
     model_override: Option<String>,
+    permission_mode: Option<String>,
 ) -> Result<()> {
     let handle = registry
         .get(id)
@@ -175,22 +177,51 @@ pub fn send_message(
         )
     };
 
+    let mode = permission_mode
+        .as_deref()
+        .unwrap_or("acceptEdits")
+        .to_string();
+    let is_manual = mode == "manual";
+
+    // For manual mode we: (1) bind a per-session socket, (2) drop the
+    // python hook script to disk, (3) generate a scoped settings.json
+    // referencing that hook, (4) pass --settings + GLASSFORGE_PERM_SOCK.
+    // Claude's `--permission-mode bypassPermissions` is used as the base
+    // so its own prompts don't fire; the hook becomes the sole gate.
+    let (claude_mode, extra_settings, perm_sock) = if is_manual {
+        let sock = broker.register(&app, id)?;
+        let hook = crate::claude::permissions::ensure_hook_script()?;
+        let settings = crate::claude::permissions::write_session_settings(id, &hook)?;
+        ("bypassPermissions".to_string(), Some(settings), Some(sock))
+    } else {
+        (mode.clone(), None, None)
+    };
+
     let in_flatpak = std::path::Path::new("/.flatpak-info").exists();
     let mut cmd = if in_flatpak {
         let claude_path = resolve_host_claude();
         let mut c = Command::new("flatpak-spawn");
         c.arg("--host");
         c.arg(format!("--directory={}", project_path));
+        if let Some(sock) = &perm_sock {
+            c.arg(format!("--env=GLASSFORGE_PERM_SOCK={}", sock.display()));
+        }
         c.arg(claude_path);
         c
     } else {
         let mut c = Command::new("claude");
         c.current_dir(&project_path);
+        if let Some(sock) = &perm_sock {
+            c.env("GLASSFORGE_PERM_SOCK", sock);
+        }
         c
     };
     cmd.arg("-p").arg(&message);
     cmd.args(["--output-format", "stream-json", "--verbose"]);
-    cmd.args(["--permission-mode", "bypassPermissions"]);
+    cmd.args(["--permission-mode", claude_mode.as_str()]);
+    if let Some(settings_path) = &extra_settings {
+        cmd.arg("--settings").arg(settings_path);
+    }
     if let Some(m) = &effective_model {
         cmd.args(["--model", m.as_str()]);
     }
@@ -366,10 +397,15 @@ pub fn list_sessions(registry: &SessionRegistry) -> Vec<SessionInfo> {
     registry.list()
 }
 
-pub fn remove_session(registry: &SessionRegistry, id: &str) -> Result<()> {
+pub fn remove_session(
+    registry: &SessionRegistry,
+    broker: &crate::claude::permissions::PermissionBroker,
+    id: &str,
+) -> Result<()> {
     // Ensure no child is still running before we drop the handle.
     let _ = kill_session(registry, id);
     registry.remove(id);
+    broker.unregister(id);
     Ok(())
 }
 

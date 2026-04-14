@@ -8,10 +8,12 @@ mod fs_browse;
 mod kde;
 mod skills;
 
+use claude::permissions::{Decision, PermissionBroker};
 use claude::{SessionInfo, SessionRegistry};
 use skills::Skill;
 
 type RegistryState<'r> = State<'r, Arc<SessionRegistry>>;
+type BrokerState<'r> = State<'r, Arc<PermissionBroker>>;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -25,6 +27,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
         .manage(Arc::new(SessionRegistry::new()))
+        .manage(Arc::new(PermissionBroker::new()))
         .setup(|app| {
             log::info!("glassforge starting up");
             #[cfg(debug_assertions)]
@@ -42,6 +45,7 @@ pub fn run() {
             health_check,
             create_session,
             send_message,
+            resolve_permission,
             kill_session,
             remove_session,
             list_sessions,
@@ -76,11 +80,33 @@ fn create_session(
 fn send_message(
     app: AppHandle,
     registry: RegistryState<'_>,
+    broker: BrokerState<'_>,
     session_id: String,
     message: String,
     model: Option<String>,
+    permission_mode: Option<String>,
 ) -> Result<(), String> {
-    claude::send_message(registry.inner(), app, &session_id, message, model)
+    claude::send_message(
+        registry.inner(),
+        broker.inner(),
+        app,
+        &session_id,
+        message,
+        model,
+        permission_mode,
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn resolve_permission(
+    broker: BrokerState<'_>,
+    session_id: String,
+    request_id: String,
+    decision: Decision,
+) -> Result<(), String> {
+    broker
+        .resolve(&session_id, &request_id, decision)
         .map_err(|e| e.to_string())
 }
 
@@ -90,8 +116,12 @@ fn kill_session(registry: RegistryState<'_>, session_id: String) -> Result<(), S
 }
 
 #[tauri::command]
-fn remove_session(registry: RegistryState<'_>, session_id: String) -> Result<(), String> {
-    claude::remove_session(registry.inner(), &session_id).map_err(|e| e.to_string())
+fn remove_session(
+    registry: RegistryState<'_>,
+    broker: BrokerState<'_>,
+    session_id: String,
+) -> Result<(), String> {
+    claude::remove_session(registry.inner(), broker.inner(), &session_id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

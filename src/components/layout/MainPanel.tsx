@@ -2,6 +2,7 @@ import type { ChatEntry } from "@/lib/types";
 import { useSessionStore } from "@/stores/sessionStore";
 import { ChatView } from "@/components/sessions/ChatView";
 import { ComposeInput } from "@/components/sessions/ComposeInput";
+import { PermissionModal } from "@/components/sessions/PermissionModal";
 
 import styles from "./MainPanel.module.css";
 
@@ -40,6 +41,7 @@ export function MainPanel() {
     <main className={styles.root}>
       <ChatView session={activeSession} entries={activeEntries} />
       <ComposeInput sessionId={activeSession.id} disabled={disabled} />
+      <PermissionModal sessionId={activeSession.id} />
     </main>
   );
 }

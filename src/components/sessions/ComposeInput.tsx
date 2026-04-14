@@ -3,6 +3,7 @@ import { Send, Square } from "lucide-react";
 
 import * as log from "@/lib/log";
 import { killSession, sendMessage } from "@/lib/tauri-commands";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 import { useSessionStore } from "@/stores/sessionStore";
 
 import styles from "./ComposeInput.module.css";
@@ -19,6 +20,7 @@ export function ComposeInput({ sessionId, disabled }: Props) {
   const isRunning = useSessionStore(
     (s) => s.sessions[sessionId]?.status === "running",
   );
+  const permissionMode = usePreferencesStore((s) => s.permissionMode);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -28,7 +30,7 @@ export function ComposeInput({ sessionId, disabled }: Props) {
     if (!message || busy || isRunning) return;
     setBusy(true);
     try {
-      await sendMessage(sessionId, message, model);
+      await sendMessage(sessionId, message, model, permissionMode);
       setText("");
     } catch (e) {
       log.error("send_message failed", e);

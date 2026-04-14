@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 
+import { PermissionModeSection } from "./PermissionModeSection";
 import { ThemeEditor } from "./ThemeEditor";
 import styles from "./SettingsPanel.module.css";
 
@@ -29,6 +30,7 @@ export function SettingsPanel({ onClose }: Props) {
         </header>
         <div className={styles.body}>
           <ThemeEditor />
+          <PermissionModeSection />
         </div>
       </aside>
     </div>

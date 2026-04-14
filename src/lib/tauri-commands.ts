@@ -15,17 +15,46 @@ export async function createSession(
   });
 }
 
+export type PermissionMode =
+  | "acceptEdits"
+  | "bypassPermissions"
+  | "plan"
+  | "manual";
+
 export async function sendMessage(
   sessionId: string,
   message: string,
   model?: string | null,
+  permissionMode?: PermissionMode | null,
 ): Promise<void> {
   return invoke<void>("send_message", {
     sessionId,
     message,
     model: model ?? null,
+    permissionMode: permissionMode ?? null,
   });
 }
+
+export type PermissionDecision = "allow" | "allowSession" | "deny";
+
+export async function resolvePermission(
+  sessionId: string,
+  requestId: string,
+  decision: PermissionDecision,
+): Promise<void> {
+  return invoke<void>("resolve_permission", {
+    sessionId,
+    requestId,
+    decision,
+  });
+}
+
+export type PermissionRequest = {
+  sessionId: string;
+  requestId: string;
+  toolName: string;
+  toolInput: unknown;
+};
 
 export async function killSession(sessionId: string): Promise<void> {
   return invoke<void>("kill_session", { sessionId });

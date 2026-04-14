@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 import * as log from "@/lib/log";
+import type { PermissionRequest } from "@/lib/tauri-commands";
 import type { ClaudeEvent, SessionStatus } from "@/lib/types";
 import { useSessionStore } from "@/stores/sessionStore";
 
@@ -12,6 +13,7 @@ export function useSessionEvents(): void {
   const order = useSessionStore((s) => s.order);
   const handleClaudeEvent = useSessionStore((s) => s.handleClaudeEvent);
   const updateStatus = useSessionStore((s) => s.updateStatus);
+  const pushPermission = useSessionStore((s) => s.pushPermission);
 
   useEffect(() => {
     const unlisteners: UnlistenFn[] = [];
@@ -22,6 +24,7 @@ export function useSessionEvents(): void {
         const eventEvent = `session://${id}/event`;
         const statusEvent = `session://${id}/status`;
         const doneEvent = `session://${id}/done`;
+        const permEvent = `session://${id}/permission_request`;
 
         const u1 = await listen<ClaudeEvent>(eventEvent, (e) => {
           handleClaudeEvent(id, e.payload);
@@ -32,14 +35,23 @@ export function useSessionEvents(): void {
         const u3 = await listen<unknown>(doneEvent, () => {
           // Reserved for future per-message completion UX.
         });
+        const u4 = await listen<PermissionRequest>(permEvent, (e) => {
+          pushPermission(id, {
+            requestId: e.payload.requestId,
+            toolName: e.payload.toolName,
+            toolInput: e.payload.toolInput,
+            receivedAt: Date.now(),
+          });
+        });
 
         if (cancelled) {
           u1();
           u2();
           u3();
+          u4();
           return;
         }
-        unlisteners.push(u1, u2, u3);
+        unlisteners.push(u1, u2, u3, u4);
       }
     }
 
@@ -55,5 +67,5 @@ export function useSessionEvents(): void {
         }
       }
     };
-  }, [order, handleClaudeEvent, updateStatus]);
+  }, [order, handleClaudeEvent, updateStatus, pushPermission]);
 }

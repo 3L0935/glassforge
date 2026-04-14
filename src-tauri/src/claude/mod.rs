@@ -3,6 +3,7 @@
 
 pub mod limits;
 pub mod parser;
+pub mod permissions;
 pub mod session;
 pub mod usage;
 
