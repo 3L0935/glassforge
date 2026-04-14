@@ -23,6 +23,7 @@ build-options:
   build-args:
     - --share=network
   env:
+    CI: "true"
     CARGO_HOME: /run/build/glassforge/cargo
     NPM_CONFIG_PREFIX: /run/build/glassforge/npm
     PNPM_HOME: /run/build/glassforge/pnpm
