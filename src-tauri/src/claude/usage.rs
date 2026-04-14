@@ -274,6 +274,8 @@ pub struct RateLimitBucket {
 pub struct RateLimits {
     pub five_hour: Option<RateLimitBucket>,
     pub seven_day: Option<RateLimitBucket>,
+    pub seven_day_opus: Option<RateLimitBucket>,
+    pub seven_day_sonnet: Option<RateLimitBucket>,
     pub captured_at_iso: Option<String>,
     pub stale_seconds: u64,
 }
@@ -327,15 +329,15 @@ pub async fn fetch_rate_limits() -> Result<Option<RateLimits>> {
 
     let body: Value = resp.json().await.context("parse oauth/usage json")?;
 
+    // Anthropic's endpoint returns `utilization` already in the 0..100
+    // percentage range (verified by curling the endpoint on a Max plan).
+    // Pass through unchanged. `used_percentage` is a legacy fallback.
     fn parse_bucket(v: Option<&Value>) -> Option<RateLimitBucket> {
         let obj = v?.as_object()?;
-        // Anthropic returns utilization as 0.0..1.0; convert to a 0..100
-        // percentage for the UI so the frontend doesn't have to know.
-        let utilization = obj.get("utilization").and_then(|n| n.as_f64());
         let used_pct = obj
-            .get("used_percentage")
+            .get("utilization")
             .and_then(|n| n.as_f64())
-            .or_else(|| utilization.map(|u| u * 100.0))?;
+            .or_else(|| obj.get("used_percentage").and_then(|n| n.as_f64()))?;
         Some(RateLimitBucket {
             used_percentage: used_pct,
             resets_at: obj
@@ -347,14 +349,22 @@ pub async fn fetch_rate_limits() -> Result<Option<RateLimits>> {
 
     let five_hour = parse_bucket(body.get("five_hour"));
     let seven_day = parse_bucket(body.get("seven_day"));
+    let seven_day_opus = parse_bucket(body.get("seven_day_opus"));
+    let seven_day_sonnet = parse_bucket(body.get("seven_day_sonnet"));
 
-    if five_hour.is_none() && seven_day.is_none() {
+    if five_hour.is_none()
+        && seven_day.is_none()
+        && seven_day_opus.is_none()
+        && seven_day_sonnet.is_none()
+    {
         return Ok(None);
     }
 
     Ok(Some(RateLimits {
         five_hour,
         seven_day,
+        seven_day_opus,
+        seven_day_sonnet,
         captured_at_iso: Some(Utc::now().to_rfc3339()),
         stale_seconds: 0,
     }))

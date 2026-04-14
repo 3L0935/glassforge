@@ -139,6 +139,8 @@
   font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .skillDescription {
@@ -146,6 +148,9 @@
   font-size: 0.72rem;
   line-height: 1.4;
   color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .skillPath {
@@ -156,4 +161,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.skillCard {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }

@@ -70,6 +70,8 @@ export type RateLimitBucket = {
 export type RateLimits = {
   fiveHour: RateLimitBucket | null;
   sevenDay: RateLimitBucket | null;
+  sevenDayOpus: RateLimitBucket | null;
+  sevenDaySonnet: RateLimitBucket | null;
   capturedAtIso: string | null;
   staleSeconds: number;
 };

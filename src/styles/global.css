@@ -10,6 +10,7 @@ body {
   padding: 0;
   height: 100%;
   width: 100%;
+  max-width: 100%;
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -17,11 +18,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 #root {
   height: 100%;
   width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 button {

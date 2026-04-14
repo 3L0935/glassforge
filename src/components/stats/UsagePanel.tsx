@@ -108,6 +108,8 @@ export function UsagePanel() {
   const weeklyPct = rates?.sevenDay?.usedPercentage ?? null;
   const fiveHourResets = rates?.fiveHour?.resetsAt ?? null;
   const weeklyResets = rates?.sevenDay?.resetsAt ?? null;
+  const opusPct = rates?.sevenDayOpus?.usedPercentage ?? null;
+  const sonnetPct = rates?.sevenDaySonnet?.usedPercentage ?? null;
 
   return (
     <section className={styles.root}>
@@ -146,6 +148,22 @@ export function UsagePanel() {
               used={Math.round(weeklyPct * 100)}
               total={10_000}
               format={() => `${weeklyPct.toFixed(1)}%`}
+            />
+          ) : null}
+          {opusPct !== null ? (
+            <LimitsBar
+              label="Weekly · Opus"
+              used={Math.round(opusPct * 100)}
+              total={10_000}
+              format={() => `${opusPct.toFixed(1)}%`}
+            />
+          ) : null}
+          {sonnetPct !== null ? (
+            <LimitsBar
+              label="Weekly · Sonnet"
+              used={Math.round(sonnetPct * 100)}
+              total={10_000}
+              format={() => `${sonnetPct.toFixed(1)}%`}
             />
           ) : null}
         </div>
