@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ChevronDown, ChevronRight, GitBranch, Wrench } from "lucide-react";
 
 import * as log from "@/lib/log";
@@ -81,8 +83,9 @@ export function ChatView({ session, entries }: Props) {
 
   const stats = useMemo(() => {
     const pricing = resolvePricing(session.model);
-    const inT = usage ? estimateTokens(usage.bytesIn) : 0;
-    const outT = usage ? estimateTokens(usage.bytesOut) : 0;
+    const hasReal = usage && (usage.inputTokens > 0 || usage.outputTokens > 0);
+    const inT = hasReal ? usage.inputTokens : usage ? estimateTokens(usage.bytesIn) : 0;
+    const outT = hasReal ? usage.outputTokens : usage ? estimateTokens(usage.bytesOut) : 0;
     return {
       inT,
       outT,
@@ -190,14 +193,22 @@ function Entry({ entry }: { entry: ChatEntry }) {
   if (entry.kind === "user") {
     return (
       <div className={`${styles.entry} ${styles.userEntry}`}>
-        <MarkdownText text={entry.text} />
+        <div className={styles.markdown}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {entry.text}
+          </ReactMarkdown>
+        </div>
       </div>
     );
   }
   if (entry.kind === "assistant") {
     return (
       <div className={`${styles.entry} ${styles.assistantEntry}`}>
-        <MarkdownText text={entry.text} />
+        <div className={styles.markdown}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {entry.text}
+          </ReactMarkdown>
+        </div>
       </div>
     );
   }
@@ -287,82 +298,3 @@ function ToolCall({
   );
 }
 
-// Minimal markdown-ish renderer: fenced code blocks become <pre>, inline
-// `code` becomes <code>. Avoids pulling a full markdown lib for v0.1.
-function MarkdownText({ text }: { text: string }) {
-  const parts = useMemo(() => parseFencedBlocks(text), [text]);
-  return (
-    <div className={styles.markdown}>
-      {parts.map((p, i) =>
-        p.kind === "code" ? (
-          <pre key={i} className={styles.codeBlock} data-lang={p.lang}>
-            {p.body}
-          </pre>
-        ) : (
-          <InlineText key={i} body={p.body} />
-        ),
-      )}
-    </div>
-  );
-}
-
-type TextOrCode =
-  | { kind: "code"; lang: string; body: string }
-  | { kind: "text"; body: string };
-
-function parseFencedBlocks(text: string): TextOrCode[] {
-  const out: TextOrCode[] = [];
-  const fence = /```([a-zA-Z0-9_\-+]*)\n([\s\S]*?)```/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = fence.exec(text)) !== null) {
-    if (m.index > last) {
-      out.push({ kind: "text", body: text.slice(last, m.index) });
-    }
-    out.push({ kind: "code", lang: m[1] ?? "", body: m[2] ?? "" });
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) {
-    out.push({ kind: "text", body: text.slice(last) });
-  }
-  return out;
-}
-
-function InlineText({ body }: { body: string }) {
-  const segments = useMemo(() => parseInlineCode(body), [body]);
-  return (
-    <p className={styles.paragraph}>
-      {segments.map((s, i) =>
-        s.kind === "code" ? (
-          <code key={i} className={styles.inlineCode}>
-            {s.body}
-          </code>
-        ) : (
-          <span key={i}>{s.body}</span>
-        ),
-      )}
-    </p>
-  );
-}
-
-type TextOrInlineCode =
-  | { kind: "text"; body: string }
-  | { kind: "code"; body: string };
-
-function parseInlineCode(body: string): TextOrInlineCode[] {
-  const out: TextOrInlineCode[] = [];
-  const re = /`([^`]+)`/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(body)) !== null) {
-    if (m.index > last) {
-      out.push({ kind: "text", body: body.slice(last, m.index) });
-    }
-    out.push({ kind: "code", body: m[1] });
-    last = m.index + m[0].length;
-  }
-  if (last < body.length) {
-    out.push({ kind: "text", body: body.slice(last) });
-  }
-  return out;
-}

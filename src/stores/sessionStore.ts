@@ -12,6 +12,10 @@ import type {
 export type SessionUsage = {
   bytesIn: number;
   bytesOut: number;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
   messages: number;
   totalCostUsd: number;
   startedAt: number;
@@ -23,6 +27,10 @@ function emptyUsage(): SessionUsage {
   return {
     bytesIn: 0,
     bytesOut: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 0,
+    cacheCreationTokens: 0,
     messages: 0,
     totalCostUsd: 0,
     startedAt: now,
@@ -260,11 +268,23 @@ export const useSessionStore = create<SessionState>((set) => ({
                 acc + (e.kind === "assistant" ? e.text.length : 0),
               0,
             );
+        const realIn = msg.usage?.input_tokens ?? 0;
+        const realOut = msg.usage?.output_tokens ?? 0;
+        const cacheRead = msg.usage?.cache_read_input_tokens ?? 0;
+        const cacheCreate = msg.usage?.cache_creation_input_tokens ?? 0;
         return {
           entries: { ...s.entries, [id]: next },
           usage: {
             ...s.usage,
-            [id]: { ...touchActivity(prevUsage), bytesIn },
+            [id]: {
+              ...touchActivity(prevUsage),
+              bytesIn,
+              inputTokens: prevUsage.inputTokens + realIn,
+              outputTokens: prevUsage.outputTokens + realOut,
+              cacheReadTokens: prevUsage.cacheReadTokens + cacheRead,
+              cacheCreationTokens:
+                prevUsage.cacheCreationTokens + cacheCreate,
+            },
           },
         };
       }
