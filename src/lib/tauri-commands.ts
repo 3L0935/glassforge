@@ -46,6 +46,15 @@ export async function deleteSessionFile(sessionId: string): Promise<void> {
   return invoke<void>("delete_session_file", { sessionId });
 }
 
+export type GitInfo = {
+  repoName: string;
+  branch: string | null;
+};
+
+export async function readGitInfo(projectPath: string): Promise<GitInfo | null> {
+  return invoke<GitInfo | null>("read_git_info", { projectPath });
+}
+
 export type PermissionMode =
   | "acceptEdits"
   | "bypassPermissions"

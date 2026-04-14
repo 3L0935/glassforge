@@ -4,6 +4,7 @@ export type SessionInfo = {
   id: string;
   project_path: string;
   model: string | null;
+  effort: string | null;
   claude_session_id: string | null;
   status: SessionStatus;
   created_at: number;

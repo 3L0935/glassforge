@@ -65,6 +65,7 @@ pub struct SessionInfo {
     pub id: String,
     pub project_path: String,
     pub model: Option<String>,
+    pub effort: Option<String>,
     pub claude_session_id: Option<String>,
     pub status: SessionStatus,
     pub created_at: u64,
@@ -139,6 +140,7 @@ pub fn create_session(
         id: id.clone(),
         project_path,
         model,
+        effort: None,
         claude_session_id,
         status: SessionStatus::Idle,
         created_at: now_secs(),
@@ -166,7 +168,7 @@ pub fn send_message(
         .get(id)
         .ok_or_else(|| anyhow!("session not found: {id}"))?;
 
-    let (project_path, effective_model, claude_session_id) = {
+    let (project_path, effective_model, effective_effort, claude_session_id) = {
         let info = handle
             .info
             .lock()
@@ -174,6 +176,7 @@ pub fn send_message(
         (
             info.project_path.clone(),
             model_override.clone().or_else(|| info.model.clone()),
+            info.effort.clone(),
             info.claude_session_id.clone(),
         )
     };
@@ -225,6 +228,9 @@ pub fn send_message(
     }
     if let Some(m) = &effective_model {
         cmd.args(["--model", m.as_str()]);
+    }
+    if let Some(e) = &effective_effort {
+        cmd.args(["--effort", e.as_str()]);
     }
     if let Some(sid) = &claude_session_id {
         cmd.args(["--resume", sid.as_str()]);

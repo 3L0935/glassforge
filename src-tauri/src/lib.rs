@@ -52,6 +52,7 @@ pub fn run() {
             list_project_sessions,
             load_session_history,
             delete_session_file,
+            read_git_info,
             get_claude_usage,
             get_rate_limits,
             list_skills,
@@ -94,6 +95,44 @@ fn load_session_history(session_id: String) -> Result<Vec<serde_json::Value>, St
 #[tauri::command]
 fn delete_session_file(session_id: String) -> Result<(), String> {
     claude::history::delete_session_file(&session_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_git_info(project_path: String) -> Option<GitInfo> {
+    git_info(&project_path)
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct GitInfo {
+    repo_name: String,
+    branch: Option<String>,
+}
+
+fn git_info(project_path: &str) -> Option<GitInfo> {
+    let p = std::path::PathBuf::from(project_path);
+    if !p.is_dir() {
+        return None;
+    }
+    let head = p.join(".git").join("HEAD");
+    if !head.is_file() {
+        return None;
+    }
+    let repo_name = p
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_default();
+    let branch = std::fs::read_to_string(&head).ok().and_then(|content| {
+        let trimmed = content.trim();
+        if let Some(r) = trimmed.strip_prefix("ref: refs/heads/") {
+            Some(r.to_string())
+        } else if trimmed.len() >= 8 {
+            Some(format!("detached {}", &trimmed[..8]))
+        } else {
+            None
+        }
+    });
+    Some(GitInfo { repo_name, branch })
 }
 
 #[tauri::command]

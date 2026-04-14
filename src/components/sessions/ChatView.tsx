@@ -1,13 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Wrench } from "lucide-react";
+import { ChevronDown, ChevronRight, GitBranch, Wrench } from "lucide-react";
 
+import * as log from "@/lib/log";
 import {
   estimateTokens,
   formatCost,
   formatTokens,
   resolvePricing,
 } from "@/lib/pricing";
+import {
+  readGitInfo,
+  type GitInfo,
+  type PermissionMode,
+} from "@/lib/tauri-commands";
 import type { ChatEntry, SessionInfo } from "@/lib/types";
+import { usePreferencesStore } from "@/stores/preferencesStore";
 import { useSessionStore, type SessionUsage } from "@/stores/sessionStore";
 
 import { ContextRing } from "@/components/stats/ContextRing";
@@ -22,6 +29,21 @@ const MODEL_OPTIONS: DropdownOption<string | null>[] = [
   { label: "Haiku 4.5", value: "haiku" },
 ];
 
+const EFFORT_OPTIONS: DropdownOption<string | null>[] = [
+  { label: "Effort: auto", value: null },
+  { label: "Effort: low", value: "low" },
+  { label: "Effort: medium", value: "medium" },
+  { label: "Effort: high", value: "high" },
+  { label: "Effort: max", value: "max" },
+];
+
+const PERMISSION_OPTIONS: DropdownOption<PermissionMode>[] = [
+  { label: "Manual approval", value: "manual" },
+  { label: "Accept edits", value: "acceptEdits" },
+  { label: "Bypass", value: "bypassPermissions" },
+  { label: "Plan only", value: "plan" },
+];
+
 type Props = {
   session: SessionInfo;
   entries: ChatEntry[];
@@ -32,7 +54,24 @@ export function ChatView({ session, entries }: Props) {
   const usage = useSessionStore(
     (s) => s.usage[session.id] ?? null,
   ) as SessionUsage | null;
+  const permissionMode = usePreferencesStore((s) => s.permissionMode);
+  const setPermissionMode = usePreferencesStore(
+    (s) => s.setPermissionMode,
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const [git, setGit] = useState<GitInfo | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    readGitInfo(session.project_path)
+      .then((g) => {
+        if (!cancelled) setGit(g);
+      })
+      .catch((e) => log.warn("read_git_info failed", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [session.project_path]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -57,8 +96,25 @@ export function ChatView({ session, entries }: Props) {
     <div className={styles.root}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.projectPath} title={session.project_path}>
-            {session.project_path}
+          <div className={styles.projectLine}>
+            {git ? (
+              <>
+                <span className={styles.repoName}>{git.repoName}</span>
+                {git.branch ? (
+                  <span className={styles.branch}>
+                    <GitBranch size={11} />
+                    {git.branch}
+                  </span>
+                ) : null}
+                <span className={styles.projectPathDim} title={session.project_path}>
+                  {session.project_path}
+                </span>
+              </>
+            ) : (
+              <div className={styles.projectPath} title={session.project_path}>
+                {session.project_path}
+              </div>
+            )}
           </div>
           <div className={styles.meta}>
             <Dropdown
@@ -67,6 +123,20 @@ export function ChatView({ session, entries }: Props) {
               options={MODEL_OPTIONS}
               value={session.model ?? null}
               onChange={(v) => updateSession(session.id, { model: v })}
+            />
+            <Dropdown
+              size="sm"
+              ariaLabel="Effort"
+              options={EFFORT_OPTIONS}
+              value={session.effort ?? null}
+              onChange={(v) => updateSession(session.id, { effort: v })}
+            />
+            <Dropdown
+              size="sm"
+              ariaLabel="Permission mode"
+              options={PERMISSION_OPTIONS}
+              value={permissionMode}
+              onChange={(v) => void setPermissionMode(v)}
             />
             <span className={styles.dot}>•</span>
             <span className={styles[session.status]}>{session.status}</span>

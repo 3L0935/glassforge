@@ -35,6 +35,46 @@
   text-overflow: ellipsis;
 }
 
+.projectLine {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.repoName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.1rem 0.45rem;
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--accent-primary) 40%, transparent);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--accent-primary);
+  white-space: nowrap;
+}
+
+.projectPathDim {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .meta {
   display: flex;
   align-items: center;
