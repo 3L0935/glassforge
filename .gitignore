@@ -40,3 +40,4 @@ flatpak/.flatpak-builder/
 flatpak/build-dir/
 flatpak/repo/
 dist/
+.claude/
