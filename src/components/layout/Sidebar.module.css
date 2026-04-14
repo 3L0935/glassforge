@@ -1,4 +1,5 @@
 .root {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: var(--sidebar-width);
@@ -10,6 +11,44 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.resizeHandle::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 3px;
+  width: 1px;
+  height: 100%;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.resizeHandle:hover::before {
+  background: color-mix(in srgb, var(--accent-primary) 60%, transparent);
+}
+
+.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.resizing .resizeHandle::before,
+.resizeHandle:active::before {
+  background: var(--accent-primary);
 }
 
 .newSession {

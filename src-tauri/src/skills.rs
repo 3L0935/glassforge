@@ -79,12 +79,68 @@ fn parse_frontmatter(content: &str, fallback_path: &Path) -> (String, String) {
 
     let mut name = fallback_name;
     let mut description = String::new();
-    for line in block.lines() {
-        let line = line.trim();
+
+    let lines: Vec<&str> = block.lines().collect();
+    let mut i = 0;
+    while i < lines.len() {
+        let line = lines[i];
+        // Only match top-level keys (unindented). Indented lines are
+        // part of a previous value (block scalar continuation).
+        let is_top_level = !line.starts_with(' ') && !line.starts_with('\t');
+
+        if !is_top_level {
+            i += 1;
+            continue;
+        }
+
         if let Some(v) = line.strip_prefix("name:") {
             name = unquote(v.trim());
+            i += 1;
         } else if let Some(v) = line.strip_prefix("description:") {
-            description = unquote(v.trim());
+            let value = v.trim();
+            match value {
+                "|" | "|-" | "|+" | ">" | ">-" | ">+" => {
+                    // YAML block scalar: collect every indented follow-up
+                    // line until we hit a dedent or a blank-terminated
+                    // run. `|` keeps newlines; `>` folds to spaces.
+                    let folded = value.starts_with('>');
+                    i += 1;
+                    let mut parts: Vec<String> = Vec::new();
+                    while i < lines.len() {
+                        let next = lines[i];
+                        if next.is_empty() {
+                            if !folded {
+                                parts.push(String::new());
+                            }
+                            i += 1;
+                            continue;
+                        }
+                        if next.starts_with(' ') || next.starts_with('\t') {
+                            parts.push(next.trim().to_string());
+                            i += 1;
+                        } else {
+                            break;
+                        }
+                    }
+                    description = if folded {
+                        parts
+                            .iter()
+                            .filter(|p| !p.is_empty())
+                            .cloned()
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    } else {
+                        parts.join("\n")
+                    };
+                    description = description.trim().to_string();
+                }
+                _ => {
+                    description = unquote(value);
+                    i += 1;
+                }
+            }
+        } else {
+            i += 1;
         }
     }
     (name, description)
@@ -155,6 +211,49 @@ mod tests {
         let (n, d) = parse_frontmatter(md, Path::new("/tmp/my-folder"));
         assert_eq!(n, "my-folder");
         assert_eq!(d, "");
+    }
+
+    #[test]
+    fn parse_frontmatter_literal_block_scalar() {
+        let md = "---\n\
+name: autoplan\n\
+description: |\n  \
+First line of the description.\n  \
+Second line continues here.\n\
+---\n\n\
+Body text.";
+        let (n, d) = parse_frontmatter(md, Path::new("/tmp/fallback"));
+        assert_eq!(n, "autoplan");
+        assert_eq!(
+            d,
+            "First line of the description.\nSecond line continues here."
+        );
+    }
+
+    #[test]
+    fn parse_frontmatter_folded_block_scalar() {
+        let md = "---\n\
+name: browse\n\
+description: >\n  \
+Fast headless browser.\n  \
+Navigate URLs and take screenshots.\n\
+---\n";
+        let (_n, d) = parse_frontmatter(md, Path::new("/tmp/browse"));
+        assert_eq!(
+            d,
+            "Fast headless browser. Navigate URLs and take screenshots."
+        );
+    }
+
+    #[test]
+    fn parse_frontmatter_strip_indicator() {
+        let md = "---\n\
+name: careful\n\
+description: |-\n  \
+Safety guardrails.\n\
+---\n";
+        let (_n, d) = parse_frontmatter(md, Path::new("/tmp/careful"));
+        assert_eq!(d, "Safety guardrails.");
     }
 
     #[test]

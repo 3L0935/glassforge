@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, Zap, ZapOff } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 import * as log from "@/lib/log";
 import {
@@ -9,27 +9,14 @@ import {
   resolvePricing,
 } from "@/lib/pricing";
 import {
-  loadPlan,
-  PLAN_LIST,
-  resolvePlan,
-  savePlan,
-  type Plan,
-  type PlanId,
-} from "@/lib/plan";
-import {
   getClaudeUsage,
   getRateLimits,
-  getUsageHookStatus,
-  installUsageHook,
-  uninstallUsageHook,
   type ClaudeUsageSnapshot,
   type ClaudeUsageTotals,
   type RateLimits,
-  type UsageHookStatus,
 } from "@/lib/tauri-commands";
 import { useSessionStore } from "@/stores/sessionStore";
 
-import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
 import { LimitsBar } from "./LimitsBar";
 
 import styles from "./UsagePanel.module.css";
@@ -53,11 +40,6 @@ const EMPTY_SNAPSHOT: ClaudeUsageSnapshot = {
   sessionCount: 0,
 };
 
-const PLAN_OPTIONS: DropdownOption<PlanId>[] = PLAN_LIST.map((p) => ({
-  label: p.label,
-  value: p.id,
-}));
-
 function formatRelative(iso: string | null): string {
   if (!iso) return "never";
   const then = new Date(iso).getTime();
@@ -73,13 +55,6 @@ function formatRelative(iso: string | null): string {
   return `${d}d ago`;
 }
 
-function billableTokens(t: ClaudeUsageTotals): number {
-  // For rate-limit comparisons we count everything the plan counts:
-  // input + output + cache creation. Cache reads are billed differently
-  // and don't really consume the same budget, so leave them out here.
-  return t.inputTokens + t.outputTokens + t.cacheCreationTokens;
-}
-
 export function UsagePanel() {
   const order = useSessionStore((s) => s.order);
   const sessions = useSessionStore((s) => s.sessions);
@@ -88,30 +63,15 @@ export function UsagePanel() {
   const [snap, setSnap] = useState<ClaudeUsageSnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [planId, setPlanIdState] = useState<PlanId>(() => loadPlan());
-  const [hook, setHook] = useState<UsageHookStatus | null>(null);
   const [rates, setRates] = useState<RateLimits | null>(null);
-  const [hookBusy, setHookBusy] = useState(false);
-
-  const plan: Plan = useMemo(() => resolvePlan(planId), [planId]);
-
-  const setPlanId = useCallback((next: PlanId) => {
-    setPlanIdState(next);
-    savePlan(next);
-  }, []);
+  const [ratesErr, setRatesErr] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setErr(null);
     try {
-      const [s, h, r] = await Promise.all([
-        getClaudeUsage(),
-        getUsageHookStatus(),
-        getRateLimits(),
-      ]);
+      const s = await getClaudeUsage();
       setSnap(s);
-      setHook(h);
-      setRates(r);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setErr(msg);
@@ -119,63 +79,35 @@ export function UsagePanel() {
     } finally {
       setLoading(false);
     }
+    // Rate limits hit Anthropic's private OAuth endpoint; treat as
+    // best-effort and surface the error separately from local totals.
+    try {
+      const r = await getRateLimits();
+      setRates(r);
+      setRatesErr(null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setRatesErr(msg);
+      setRates(null);
+      log.warn("get_rate_limits failed", msg);
+    }
   }, []);
 
   useEffect(() => {
     void refresh();
-    const h = window.setInterval(() => void refresh(), 10_000);
+    const h = window.setInterval(() => void refresh(), 60_000);
     return () => window.clearInterval(h);
   }, [refresh]);
-
-  async function onInstallHook() {
-    setHookBusy(true);
-    setErr(null);
-    try {
-      const h = await installUsageHook();
-      setHook(h);
-      await refresh();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setErr(msg);
-    } finally {
-      setHookBusy(false);
-    }
-  }
-
-  async function onUninstallHook() {
-    setHookBusy(true);
-    setErr(null);
-    try {
-      const h = await uninstallUsageHook();
-      setHook(h);
-      setRates(null);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setErr(msg);
-    } finally {
-      setHookBusy(false);
-    }
-  }
-
-  const liveRates =
-    rates &&
-    (rates.fiveHour !== null || rates.sevenDay !== null) &&
-    rates.staleSeconds < 60 * 15;
 
   const lastActivity = useMemo(
     () => formatRelative(snap.lastActivityIso),
     [snap.lastActivityIso],
   );
 
-  const fiveHourUsed = billableTokens(snap.last5h);
-  const weeklyUsed = billableTokens(snap.last7d);
-
-  const fiveHourPct = liveRates
-    ? (rates?.fiveHour?.usedPercentage ?? null)
-    : null;
-  const weeklyPct = liveRates
-    ? (rates?.sevenDay?.usedPercentage ?? null)
-    : null;
+  const fiveHourPct = rates?.fiveHour?.usedPercentage ?? null;
+  const weeklyPct = rates?.sevenDay?.usedPercentage ?? null;
+  const fiveHourResets = rates?.fiveHour?.resetsAt ?? null;
+  const weeklyResets = rates?.sevenDay?.resetsAt ?? null;
 
   return (
     <section className={styles.root}>
@@ -198,97 +130,34 @@ export function UsagePanel() {
 
       {err ? <p className={styles.error}>{err}</p> : null}
 
-      {hook ? (
-        hook.installed ? (
-          <div className={styles.hookActive}>
-            <Zap size={11} />
-            <span>
-              Live /usage hook active ·{" "}
-              {rates?.capturedAtIso
-                ? `${formatRelative(rates.capturedAtIso)}`
-                : "waiting for first claude run"}
-            </span>
-            <button
-              type="button"
-              className={styles.hookToggle}
-              onClick={() => void onUninstallHook()}
-              disabled={hookBusy}
-            >
-              disable
-            </button>
-          </div>
-        ) : (
-          <div className={styles.hookInstall}>
-            <ZapOff size={11} />
-            <div className={styles.hookText}>
-              <strong>Live usage not enabled</strong>
-              <span>
-                GlassForge can install a statusLine hook in your
-                ~/.claude/settings.json to capture the real /usage data
-                (five-hour + weekly). Your existing settings.json is backed
-                up first.
-              </span>
-            </div>
-            <button
-              type="button"
-              className={styles.hookToggle}
-              onClick={() => void onInstallHook()}
-              disabled={hookBusy}
-            >
-              {hookBusy ? "Installing…" : "Enable"}
-            </button>
-          </div>
-        )
-      ) : null}
-
-      <div className={styles.planRow}>
-        <span className={styles.planLabel}>Plan</span>
-        <Dropdown
-          size="sm"
-          fullWidth
-          ariaLabel="Plan"
-          options={PLAN_OPTIONS}
-          value={planId}
-          onChange={setPlanId}
-        />
-      </div>
-
-      <div className={styles.rateLimits}>
-        {fiveHourPct !== null ? (
-          <LimitsBar
-            label="5-hour window (live)"
-            used={Math.round(fiveHourPct * 100)}
-            total={10_000}
-            format={() => `${fiveHourPct.toFixed(1)}%`}
-          />
-        ) : (
-          <LimitsBar
-            label="5-hour window (est.)"
-            used={fiveHourUsed}
-            total={plan.fiveHourTokens}
-            format={(u, t) => `${formatTokens(u)} / ${formatTokens(t)}`}
-          />
-        )}
-        {weeklyPct !== null ? (
-          <LimitsBar
-            label="Weekly (live)"
-            used={Math.round(weeklyPct * 100)}
-            total={10_000}
-            format={() => `${weeklyPct.toFixed(1)}%`}
-          />
-        ) : plan.weeklyTokens !== null ? (
-          <LimitsBar
-            label="Weekly (est.)"
-            used={weeklyUsed}
-            total={plan.weeklyTokens}
-            format={(u, t) => `${formatTokens(u)} / ${formatTokens(t)}`}
-          />
-        ) : (
-          <div className={styles.noWeekly}>
-            Weekly limit: not enforced on {plan.label}
-          </div>
-        )}
-      </div>
+      {fiveHourPct !== null || weeklyPct !== null ? (
+        <div className={styles.rateLimits}>
+          {fiveHourPct !== null ? (
+            <LimitsBar
+              label={`5-hour window${fiveHourResets ? ` · resets ${formatRelative(fiveHourResets).replace(" ago", "")}` : ""}`}
+              used={Math.round(fiveHourPct * 100)}
+              total={10_000}
+              format={() => `${fiveHourPct.toFixed(1)}%`}
+            />
+          ) : null}
+          {weeklyPct !== null ? (
+            <LimitsBar
+              label={`Weekly${weeklyResets ? ` · resets ${formatRelative(weeklyResets).replace(" ago", "")}` : ""}`}
+              used={Math.round(weeklyPct * 100)}
+              total={10_000}
+              format={() => `${weeklyPct.toFixed(1)}%`}
+            />
+          ) : null}
+        </div>
+      ) : ratesErr ? (
+        <div className={styles.ratesHint}>
+          Live /usage unavailable: {ratesErr}
+        </div>
+      ) : (
+        <div className={styles.ratesHint}>
+          Live /usage not yet fetched. Refresh to retry.
+        </div>
+      )}
 
       <div className={styles.buckets}>
         <BucketCard label="Last 5 hours" totals={snap.last5h} />

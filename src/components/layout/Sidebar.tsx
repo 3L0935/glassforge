@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   Clock,
@@ -24,6 +24,23 @@ import styles from "./Sidebar.module.css";
 
 type Tab = "sessions" | "usage" | "skills";
 
+const SIDEBAR_WIDTH_KEY = "glassforge.sidebarWidth";
+const SIDEBAR_MIN = 220;
+const SIDEBAR_MAX = 520;
+const SIDEBAR_DEFAULT = 260;
+
+function loadSidebarWidth(): number {
+  try {
+    const v = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
+    if (Number.isFinite(v) && v >= SIDEBAR_MIN && v <= SIDEBAR_MAX) {
+      return v;
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return SIDEBAR_DEFAULT;
+}
+
 export function Sidebar() {
   const order = useSessionStore((s) => s.order);
   const sessions = useSessionStore((s) => s.sessions);
@@ -42,6 +59,41 @@ export function Sidebar() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [width, setWidth] = useState<number>(() => loadSidebarWidth());
+  const rootRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+    } catch {
+      // swallow
+    }
+  }, [width]);
+
+  const startResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const root = rootRef.current;
+    if (!root) return;
+    const startX = e.clientX;
+    const startWidth = root.getBoundingClientRect().width;
+
+    function onMove(me: MouseEvent) {
+      const delta = me.clientX - startX;
+      const next = Math.max(
+        SIDEBAR_MIN,
+        Math.min(SIDEBAR_MAX, startWidth + delta),
+      );
+      setWidth(next);
+    }
+    function onUp() {
+      document.body.classList.remove(styles.resizing);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    }
+    document.body.classList.add(styles.resizing);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, []);
 
   useEffect(() => {
     void historyLoad();
@@ -101,7 +153,11 @@ export function Sidebar() {
   }
 
   return (
-    <aside className={styles.root}>
+    <aside
+      ref={rootRef}
+      className={styles.root}
+      style={{ width: `${width}px`, minWidth: `${width}px` }}
+    >
       <div className={styles.newSession}>
         <label className={styles.label} htmlFor="project-path">
           Project path
@@ -249,6 +305,15 @@ export function Sidebar() {
           onClose={() => setPickerOpen(false)}
         />
       ) : null}
+
+      <div
+        className={styles.resizeHandle}
+        onMouseDown={startResize}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        title="Drag to resize"
+      />
     </aside>
   );
 }
