@@ -9,12 +9,21 @@ import {
   resolvePricing,
 } from "@/lib/pricing";
 import {
+  loadPlan,
+  PLAN_LIST,
+  resolvePlan,
+  savePlan,
+  type Plan,
+  type PlanId,
+} from "@/lib/plan";
+import {
   getClaudeUsage,
   type ClaudeUsageSnapshot,
   type ClaudeUsageTotals,
 } from "@/lib/tauri-commands";
 import { useSessionStore } from "@/stores/sessionStore";
 
+import { Dropdown, type DropdownOption } from "@/components/ui/Dropdown";
 import { LimitsBar } from "./LimitsBar";
 
 import styles from "./UsagePanel.module.css";
@@ -29,6 +38,7 @@ const EMPTY_TOTALS: ClaudeUsageTotals = {
 };
 
 const EMPTY_SNAPSHOT: ClaudeUsageSnapshot = {
+  last5h: EMPTY_TOTALS,
   today: EMPTY_TOTALS,
   last7d: EMPTY_TOTALS,
   allTime: EMPTY_TOTALS,
@@ -36,6 +46,11 @@ const EMPTY_SNAPSHOT: ClaudeUsageSnapshot = {
   lastActivityIso: null,
   sessionCount: 0,
 };
+
+const PLAN_OPTIONS: DropdownOption<PlanId>[] = PLAN_LIST.map((p) => ({
+  label: p.label,
+  value: p.id,
+}));
 
 function formatRelative(iso: string | null): string {
   if (!iso) return "never";
@@ -52,8 +67,11 @@ function formatRelative(iso: string | null): string {
   return `${d}d ago`;
 }
 
-function totalTokens(t: ClaudeUsageTotals): number {
-  return t.inputTokens + t.outputTokens;
+function billableTokens(t: ClaudeUsageTotals): number {
+  // For rate-limit comparisons we count everything the plan counts:
+  // input + output + cache creation. Cache reads are billed differently
+  // and don't really consume the same budget, so leave them out here.
+  return t.inputTokens + t.outputTokens + t.cacheCreationTokens;
 }
 
 export function UsagePanel() {
@@ -64,6 +82,14 @@ export function UsagePanel() {
   const [snap, setSnap] = useState<ClaudeUsageSnapshot>(EMPTY_SNAPSHOT);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [planId, setPlanIdState] = useState<PlanId>(() => loadPlan());
+
+  const plan: Plan = useMemo(() => resolvePlan(planId), [planId]);
+
+  const setPlanId = useCallback((next: PlanId) => {
+    setPlanIdState(next);
+    savePlan(next);
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -82,8 +108,6 @@ export function UsagePanel() {
 
   useEffect(() => {
     void refresh();
-    // Re-fetch every 30s while the panel is mounted; claude writes to the
-    // JSONL files live as messages flow so we want reasonable freshness.
     const h = window.setInterval(() => void refresh(), 30_000);
     return () => window.clearInterval(h);
   }, [refresh]);
@@ -92,6 +116,9 @@ export function UsagePanel() {
     () => formatRelative(snap.lastActivityIso),
     [snap.lastActivityIso],
   );
+
+  const fiveHourUsed = billableTokens(snap.last5h);
+  const weeklyUsed = billableTokens(snap.last7d);
 
   return (
     <section className={styles.root}>
@@ -114,7 +141,41 @@ export function UsagePanel() {
 
       {err ? <p className={styles.error}>{err}</p> : null}
 
+      <div className={styles.planRow}>
+        <span className={styles.planLabel}>Plan</span>
+        <Dropdown
+          size="sm"
+          fullWidth
+          ariaLabel="Plan"
+          options={PLAN_OPTIONS}
+          value={planId}
+          onChange={setPlanId}
+        />
+      </div>
+
+      <div className={styles.rateLimits}>
+        <LimitsBar
+          label="5-hour window"
+          used={fiveHourUsed}
+          total={plan.fiveHourTokens}
+          format={(u, t) => `${formatTokens(u)} / ${formatTokens(t)}`}
+        />
+        {plan.weeklyTokens !== null ? (
+          <LimitsBar
+            label="Weekly"
+            used={weeklyUsed}
+            total={plan.weeklyTokens}
+            format={(u, t) => `${formatTokens(u)} / ${formatTokens(t)}`}
+          />
+        ) : (
+          <div className={styles.noWeekly}>
+            Weekly limit: not enforced on {plan.label}
+          </div>
+        )}
+      </div>
+
       <div className={styles.buckets}>
+        <BucketCard label="Last 5 hours" totals={snap.last5h} />
         <BucketCard label="Today" totals={snap.today} />
         <BucketCard label="Last 7 days" totals={snap.last7d} />
         <BucketCard label="All time" totals={snap.allTime} />
@@ -128,7 +189,9 @@ export function UsagePanel() {
               <li key={m.model} className={styles.modelRow}>
                 <span className={styles.modelName}>{m.model}</span>
                 <span className={styles.modelTokens}>
-                  {formatTokens(totalTokens(m.totals))}
+                  {formatTokens(
+                    m.totals.inputTokens + m.totals.outputTokens,
+                  )}
                 </span>
                 <span className={styles.modelCost}>
                   {formatCost(m.totals.costUsd)}

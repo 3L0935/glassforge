@@ -49,6 +49,7 @@ export type ClaudeUsageTotals = {
 };
 
 export type ClaudeUsageSnapshot = {
+  last5h: ClaudeUsageTotals;
   today: ClaudeUsageTotals;
   last7d: ClaudeUsageTotals;
   allTime: ClaudeUsageTotals;

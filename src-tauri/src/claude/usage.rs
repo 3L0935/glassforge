@@ -38,6 +38,7 @@ pub struct ModelBreakdown {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
+    pub last_5h: Totals,
     pub today: Totals,
     pub last_7d: Totals,
     pub all_time: Totals,
@@ -104,6 +105,7 @@ pub fn compute() -> Result<Snapshot> {
     let now = Utc::now();
     let today: NaiveDate = now.date_naive();
     let week_ago: NaiveDate = (now - Duration::days(6)).date_naive();
+    let five_h_ago: DateTime<Utc> = now - Duration::hours(5);
 
     let mut snap = Snapshot::default();
     let mut per_model: std::collections::HashMap<String, Totals> = std::collections::HashMap::new();
@@ -199,6 +201,9 @@ pub fn compute() -> Result<Snapshot> {
                     }
                     if date == today {
                         add_in_place(&mut snap.today, &entry);
+                    }
+                    if ts >= five_h_ago {
+                        add_in_place(&mut snap.last_5h, &entry);
                     }
                     if last_ts.map_or(true, |prev| ts > prev) {
                         last_ts = Some(ts);
