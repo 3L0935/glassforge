@@ -22,7 +22,8 @@
         "transparent": true,
         "decorations": true,
         "resizable": true,
-        "center": true
+        "center": true,
+        "devtools": true
       }
     ],
     "security": {
