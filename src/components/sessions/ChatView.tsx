@@ -5,13 +5,11 @@ import { Check, ChevronDown, ChevronRight, Copy, GitBranch, Wrench } from "lucid
 
 import * as log from "@/lib/log";
 import {
-  estimateTokens,
   formatCost,
   formatTokens,
-  modelFamily,
   prettyModelName,
-  resolvePricing,
 } from "@/lib/pricing";
+import { computeSessionStats } from "@/lib/sessionStats";
 import {
   readGitInfo,
   type GitInfo,
@@ -105,54 +103,10 @@ export function ChatView({ session, entries }: Props) {
     );
   }, [session.model, usage?.detectedModel]);
 
-  const stats = useMemo(() => {
-    // Prefer the exact model string claude reported on its last turn —
-    // the user-facing dropdown carries short aliases, so falling back to
-    // `detectedModel` picks up the precise build (and its context window).
-    const effectiveModel = session.model ?? usage?.detectedModel ?? null;
-    const pricing = resolvePricing(effectiveModel);
-    const hasReal = usage && (usage.inputTokens > 0 || usage.outputTokens > 0);
-    const inT = hasReal ? usage.inputTokens : usage ? estimateTokens(usage.bytesIn) : 0;
-    const outT = hasReal ? usage.outputTokens : usage ? estimateTokens(usage.bytesOut) : 0;
-    // Hold the ring at 0% until we have a real measurement from claude.
-    // Before the first assistant reply the context window isn't even
-    // known (opus vs sonnet vs 1M), so any byte-based estimate would
-    // show an incoherent percentage against the wrong denominator.
-    // Once `currentContextTokens` lands on the first turn, the ring
-    // snaps to the accurate value with the detected model's window.
-    const ctxUsed = usage?.currentContextTokens ?? 0;
-    // Resolution priority for the context window:
-    //   1. `reportedContextWindow` from the result event → ground truth
-    //   2. User preference "1M context scope" per model family
-    //   3. Observation: maxObserved exceeds 95% of the pricing window
-    //   4. Pricing table entry (default 200k)
-    const reported = usage?.reportedContextWindow;
-    let total: number;
-    if (reported && reported > 0) {
-      total = reported;
-    } else {
-      const maxSeen = usage?.maxObservedContextTokens ?? 0;
-      const family = modelFamily(effectiveModel);
-      const familyHas1m =
-        family === "opus"
-          ? longContextScope === "opus" || longContextScope === "opus-sonnet"
-          : family === "sonnet"
-            ? longContextScope === "opus-sonnet"
-            : false;
-      const observed1m = maxSeen > pricing.contextWindow * 0.95;
-      const needs1m = familyHas1m || observed1m;
-      total = needs1m && pricing.contextWindow < 1_000_000
-        ? 1_000_000
-        : pricing.contextWindow;
-    }
-    return {
-      inT,
-      outT,
-      used: ctxUsed,
-      total,
-      cost: usage?.totalCostUsd ?? 0,
-    };
-  }, [usage, session.model, longContextScope]);
+  const stats = useMemo(
+    () => computeSessionStats(usage, session, longContextScope),
+    [usage, session, longContextScope],
+  );
 
   return (
     <div className={styles.root}>
@@ -207,12 +161,12 @@ export function ChatView({ session, entries }: Props) {
               in {formatTokens(stats.inT)} · out {formatTokens(stats.outT)}
             </span>
             <span className={styles.dot}>•</span>
-            <span>{formatCost(stats.cost)}</span>
+            <span>{formatCost(stats.cumulativeCostUsd)}</span>
           </div>
         </div>
         <ContextRing
-          used={stats.used}
-          total={stats.total}
+          used={stats.ctxUsed}
+          total={stats.ctxTotal}
           size={54}
           modelName={usage?.detectedModel ?? session.model ?? null}
         />

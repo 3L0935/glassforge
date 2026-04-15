@@ -46,7 +46,9 @@ fn mime_from_extension(ext: &str) -> &'static str {
 
 fn sanitize_extension(ext: &str) -> String {
     let trimmed = ext.trim().trim_start_matches('.').to_ascii_lowercase();
-    if trimmed.is_empty() || trimmed.len() > 8 || !trimmed.chars().all(|c| c.is_ascii_alphanumeric())
+    if trimmed.is_empty()
+        || trimmed.len() > 8
+        || !trimmed.chars().all(|c| c.is_ascii_alphanumeric())
     {
         return "png".to_string();
     }
@@ -71,8 +73,8 @@ pub fn save_bytes_to_temp(bytes: Vec<u8>, extension: &str) -> Result<PathBuf> {
     let ext = sanitize_extension(extension);
     let filename = format!("glassforge-paste-{}.{}", now_nanos(), ext);
     let path = std::env::temp_dir().join(filename);
-    let mut file = fs::File::create(&path)
-        .with_context(|| format!("create temp file {}", path.display()))?;
+    let mut file =
+        fs::File::create(&path).with_context(|| format!("create temp file {}", path.display()))?;
     file.write_all(&bytes)
         .with_context(|| format!("write temp file {}", path.display()))?;
     Ok(path)
@@ -89,15 +91,9 @@ pub fn read_as_data_url(path: &Path) -> Result<String> {
     // Mirror the clipboard cap so a 200 MiB RAW dropped from a file
     // manager doesn't stall the renderer inlining it.
     if bytes.len() > MAX_CLIPBOARD_IMAGE_BYTES {
-        return Err(anyhow!(
-            "image too large to preview: {} bytes",
-            bytes.len()
-        ));
+        return Err(anyhow!("image too large to preview: {} bytes", bytes.len()));
     }
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("png");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("png");
     let mime = mime_from_extension(ext);
     let encoded = BASE64.encode(&bytes);
     Ok(format!("data:{mime};base64,{encoded}"))

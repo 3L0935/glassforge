@@ -107,6 +107,16 @@ export type ChatEntry =
       input: unknown;
       result?: string;
       isError?: boolean;
+      // Optional per-turn metadata attached by the history parser so
+      // seedEntries can recover usage for tool-use-only assistant turns
+      // (no text block to hang the counters on).
+      model?: string;
+      usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        cache_read_input_tokens?: number;
+        cache_creation_input_tokens?: number;
+      };
     }
   | {
       kind: "result";

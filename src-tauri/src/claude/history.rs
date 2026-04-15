@@ -365,13 +365,27 @@ pub fn load_session_history(session_id: &str) -> Result<Vec<Value>> {
                                 .unwrap_or("")
                                 .to_string();
                             let input = block.get("input").cloned().unwrap_or(Value::Null);
-                            entries.push(json!({
+                            let mut obj = json!({
                                 "kind": "tool",
                                 "ts": ts,
                                 "id": id,
                                 "name": name,
                                 "input": input,
-                            }));
+                            });
+                            // Attach the turn's model/usage so seedEntries
+                            // can recover counters for assistant turns that
+                            // contain only tool_use blocks (no text to hang
+                            // the metadata on). For turns that also have a
+                            // text block, the same usage gets attached
+                            // twice — harmless, seedEntries overwrites.
+                            let obj_mut = obj.as_object_mut().unwrap();
+                            if let Some(m) = &model {
+                                obj_mut.insert("model".into(), json!(m));
+                            }
+                            if let Some(u) = &usage {
+                                obj_mut.insert("usage".into(), u.clone());
+                            }
+                            entries.push(obj);
                         }
                         _ => {}
                     }

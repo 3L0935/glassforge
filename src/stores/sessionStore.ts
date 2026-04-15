@@ -548,26 +548,48 @@ export const useSessionStore = create<SessionState>((set) => ({
       let currentContextTokens = 0;
       let maxObservedContextTokens = 0;
       let detectedModel: string | undefined;
+      // Track which turn-ids we've already counted so the same usage
+      // block (duplicated across a turn's text + tool entries by the
+      // history parser) doesn't get summed twice. The JSONL timestamp
+      // is good enough as a per-turn key.
+      const seenTurnKeys = new Set<string>();
       for (const e of nextEntries) {
-        if (e.kind === "assistant") {
-          if (e.model) detectedModel = e.model;
-          if (e.usage) {
-            const inTok = e.usage.input_tokens ?? 0;
-            const outTok = e.usage.output_tokens ?? 0;
-            const cacheR = e.usage.cache_read_input_tokens ?? 0;
-            const cacheC = e.usage.cache_creation_input_tokens ?? 0;
-            inputTokens += inTok;
-            outputTokens += outTok;
-            cacheReadTokens += cacheR;
-            cacheCreationTokens += cacheC;
-            // Overwrite so the LAST assistant turn wins — that's the
-            // current conversation context size.
-            const turnTotal = inTok + outTok + cacheR + cacheC;
-            currentContextTokens = turnTotal;
-            if (turnTotal > maxObservedContextTokens) {
-              maxObservedContextTokens = turnTotal;
-            }
-          }
+        // Both assistant text entries and tool entries may carry the
+        // turn's usage — we check both and dedupe on timestamp.
+        const usageCarrier = e as {
+          kind: string;
+          ts: number;
+          model?: string;
+          usage?: {
+            input_tokens?: number;
+            output_tokens?: number;
+            cache_read_input_tokens?: number;
+            cache_creation_input_tokens?: number;
+          };
+        };
+        if (usageCarrier.kind !== "assistant" && usageCarrier.kind !== "tool") {
+          continue;
+        }
+        if (usageCarrier.model) detectedModel = usageCarrier.model;
+        if (!usageCarrier.usage) continue;
+        const turnKey = String(usageCarrier.ts);
+        if (seenTurnKeys.has(turnKey)) continue;
+        seenTurnKeys.add(turnKey);
+        const inTok = usageCarrier.usage.input_tokens ?? 0;
+        const outTok = usageCarrier.usage.output_tokens ?? 0;
+        const cacheR = usageCarrier.usage.cache_read_input_tokens ?? 0;
+        const cacheC = usageCarrier.usage.cache_creation_input_tokens ?? 0;
+        inputTokens += inTok;
+        outputTokens += outTok;
+        cacheReadTokens += cacheR;
+        cacheCreationTokens += cacheC;
+        // Overwrite so the LAST turn wins — that's the current
+        // conversation context size seen by claude on its most recent
+        // request.
+        const turnTotal = inTok + outTok + cacheR + cacheC;
+        currentContextTokens = turnTotal;
+        if (turnTotal > maxObservedContextTokens) {
+          maxObservedContextTokens = turnTotal;
         }
       }
       const prev = s.usage[sessionId] ?? emptyUsage();

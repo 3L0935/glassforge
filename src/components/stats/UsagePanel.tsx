@@ -2,14 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import * as log from "@/lib/log";
-import {
-  estimateTokens,
-  formatCost,
-  formatTokens,
-  modelFamily,
-  prettyModelName,
-  resolvePricing,
-} from "@/lib/pricing";
+import { formatCost, formatTokens, prettyModelName } from "@/lib/pricing";
+import { computeSessionStats } from "@/lib/sessionStats";
 import { usePreferencesStore } from "@/stores/preferencesStore";
 import {
   getClaudeUsage,
@@ -215,42 +209,10 @@ export function UsagePanel() {
               const s = sessions[id];
               const u = liveUsage[id];
               if (!s || !u) return null;
-              const hasReal =
-                u.inputTokens > 0 || u.outputTokens > 0;
-              const inT = hasReal
-                ? u.inputTokens
-                : estimateTokens(u.bytesIn);
-              const outT = hasReal
-                ? u.outputTokens
-                : estimateTokens(u.bytesOut);
-              const effectiveModel =
-                s.model ?? u.detectedModel ?? null;
-              const p = resolvePricing(effectiveModel);
-              const ctxUsed = u.currentContextTokens;
-              // Same window resolution as ChatView: reported > pref > observed > pricing
-              const reported = u.reportedContextWindow;
-              let ctxTotal: number;
-              if (reported && reported > 0) {
-                ctxTotal = reported;
-              } else {
-                const fam = modelFamily(effectiveModel);
-                const scope = longContextScope;
-                const famHas1m =
-                  fam === "opus"
-                    ? scope === "opus" ||
-                      scope === "opus-sonnet"
-                    : fam === "sonnet"
-                      ? scope === "opus-sonnet"
-                      : false;
-                const obs1m =
-                  u.maxObservedContextTokens >
-                  p.contextWindow * 0.95;
-                ctxTotal =
-                  (famHas1m || obs1m) &&
-                  p.contextWindow < 1_000_000
-                    ? 1_000_000
-                    : p.contextWindow;
-              }
+              // Route through the shared helper so the sidebar can
+              // never drift from the ChatView header — same inputs,
+              // same formula, same output.
+              const stats = computeSessionStats(u, s, longContextScope);
               const modelLabel = u.detectedModel
                 ? prettyModelName(u.detectedModel)
                 : s.model ?? "default";
@@ -269,15 +231,15 @@ export function UsagePanel() {
                   </div>
                   <div className={styles.rowStats}>
                     <span>
-                      in {formatTokens(inT)} · out{" "}
-                      {formatTokens(outT)}
+                      in {formatTokens(stats.inT)} · out{" "}
+                      {formatTokens(stats.outT)}
                     </span>
-                    <span>{formatCost(u.totalCostUsd)}</span>
+                    <span>{formatCost(stats.cumulativeCostUsd)}</span>
                   </div>
                   <LimitsBar
                     label="Context"
-                    used={ctxUsed}
-                    total={ctxTotal}
+                    used={stats.ctxUsed}
+                    total={stats.ctxTotal}
                     format={(a, b) =>
                       `${formatTokens(a)} / ${formatTokens(b)}`
                     }
