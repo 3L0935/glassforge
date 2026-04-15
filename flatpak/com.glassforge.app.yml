@@ -38,7 +38,10 @@ modules:
       - pnpm install --frozen-lockfile || pnpm install
       - pnpm tauri build --no-bundle
       - install -Dm755 src-tauri/target/release/glassforge /app/bin/glassforge
-      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/256x256/apps/com.glassforge.app.png
+      - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/com.glassforge.app.png
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/com.glassforge.app.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/com.glassforge.app.png
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/com.glassforge.app.png
       - install -Dm644 flatpak/com.glassforge.app.desktop /app/share/applications/com.glassforge.app.desktop
       - install -Dm644 flatpak/com.glassforge.app.metainfo.xml /app/share/metainfo/com.glassforge.app.metainfo.xml
     sources:
