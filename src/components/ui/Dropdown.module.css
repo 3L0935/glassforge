@@ -23,9 +23,9 @@
   cursor: pointer;
   outline: none;
   transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    background var(--duration-base) var(--ease-default),
+    border-color var(--duration-base) var(--ease-default),
+    box-shadow var(--duration-base) var(--ease-default);
 }
 
 .trigger:hover {
@@ -63,7 +63,7 @@
 .chevron {
   color: var(--text-secondary);
   flex-shrink: 0;
-  transition: transform 0.18s ease, color 0.15s ease;
+  transition: transform var(--duration-base) var(--ease-default), color var(--duration-base) var(--ease-default);
 }
 
 .chevronOpen {
@@ -89,7 +89,7 @@
   box-shadow: var(--shadow-dropdown);
   backdrop-filter: blur(30px) saturate(1.5);
   -webkit-backdrop-filter: blur(30px) saturate(1.5);
-  z-index: 200;
+  z-index: var(--z-overlay);
   animation: dropdownIn 0.14s ease;
 }
 
@@ -117,7 +117,7 @@
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: background 0.1s ease, color 0.1s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .sm .option {

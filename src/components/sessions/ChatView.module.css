@@ -122,7 +122,7 @@
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%23a0a0b0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
   background-repeat: no-repeat;
   background-position: right 0.4rem center;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: border-color var(--duration-base) var(--ease-default), background-color var(--duration-base) var(--ease-default);
 }
 
 .modelSelect:hover {
@@ -355,7 +355,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: opacity var(--duration-base) var(--ease-default), color var(--duration-base) var(--ease-default), background var(--duration-base) var(--ease-default);
 }
 
 .copyBtn:hover {

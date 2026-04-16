@@ -36,7 +36,7 @@
   font-family: var(--font-mono);
   font-size: 0.72rem;
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color var(--duration-base) var(--ease-default), background var(--duration-base) var(--ease-default);
 }
 
 .input:focus {
@@ -59,7 +59,7 @@
   background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  transition: background 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default);
 }
 
 .installButton:hover:not(:disabled) {
@@ -104,7 +104,7 @@
   border: none;
   color: var(--text-muted);
   border-radius: 4px;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .refresh:hover {

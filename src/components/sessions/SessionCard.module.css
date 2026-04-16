@@ -8,7 +8,7 @@
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   text-align: left;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default);
 }
 
 .card:hover {
@@ -82,7 +82,7 @@
   border-radius: 4px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .kill:hover {

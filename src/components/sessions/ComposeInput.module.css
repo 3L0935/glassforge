@@ -65,7 +65,7 @@
   border-radius: 50%;
   color: var(--text-primary);
   cursor: pointer;
-  transition: background 0.12s ease, transform 0.1s ease;
+  transition: background var(--duration-fast) var(--ease-default), transform var(--duration-fast) var(--ease-default);
 }
 
 .attachmentRemove:hover {
@@ -102,7 +102,7 @@
   border: 1px solid var(--glass-border);
   color: var(--text-secondary);
   border-radius: var(--radius-md);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default), color var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default);
   flex-shrink: 0;
 }
 
@@ -132,7 +132,7 @@
   font-size: 0.85rem;
   font-weight: 500;
   pointer-events: none;
-  z-index: 4;
+  z-index: var(--z-chrome);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
@@ -156,7 +156,7 @@
   backdrop-filter: blur(var(--modal-panel-blur)) saturate(var(--glass-saturation));
   -webkit-backdrop-filter: blur(var(--modal-panel-blur)) saturate(var(--glass-saturation));
   box-shadow: var(--shadow-dropdown);
-  z-index: 5;
+  z-index: var(--z-sticky);
 }
 
 .slashItem {
@@ -166,7 +166,7 @@
   padding: 0.45rem 0.6rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default);
 }
 
 .slashItem:hover,
@@ -201,7 +201,7 @@
   font-size: 0.82rem;
   line-height: 1.5;
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color var(--duration-base) var(--ease-default), background var(--duration-base) var(--ease-default);
 }
 
 .textarea:focus {
@@ -224,7 +224,7 @@
   background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
   color: var(--text-primary);
   border-radius: var(--radius-md);
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background var(--duration-base) var(--ease-default), transform var(--duration-fast) var(--ease-default);
 }
 
 .sendButton:hover:not(:disabled) {

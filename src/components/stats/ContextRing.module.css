@@ -8,7 +8,7 @@
 .svg {
   position: absolute;
   inset: 0;
-  transition: color 0.25s ease;
+  transition: color var(--duration-slow) var(--ease-default);
 }
 
 .track {
@@ -17,7 +17,7 @@
 
 .fill {
   stroke: currentColor;
-  transition: stroke-dashoffset 0.4s ease;
+  transition: stroke-dashoffset var(--duration-slow) var(--ease-default);
 }
 
 .safe {

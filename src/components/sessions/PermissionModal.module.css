@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +133,7 @@
   font-size: 0.76rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
+  transition: background var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default), transform var(--duration-fast) var(--ease-default);
 }
 
 .button:hover {

@@ -58,7 +58,7 @@
   background: transparent;
   color: var(--text-secondary);
   border-radius: var(--radius-sm);
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .controlButton:hover {
