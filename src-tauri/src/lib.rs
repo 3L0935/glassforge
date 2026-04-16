@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, State, WebviewWindow};
 
 mod attachments;
+mod catalog;
 mod claude;
 mod config;
 mod fs_browse;
@@ -58,6 +59,8 @@ pub fn run() {
             get_rate_limits,
             list_skills,
             install_skill,
+            list_marketplace_entries,
+            list_installed_plugins,
             list_dir,
             save_clipboard_image,
             read_image_as_data_url,
@@ -216,6 +219,16 @@ fn list_skills() -> Result<Vec<Skill>, String> {
 #[tauri::command]
 fn install_skill(url: String) -> Result<Skill, String> {
     skills::install_skill_from_git(&url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_marketplace_entries() -> Result<Vec<catalog::CatalogEntry>, String> {
+    catalog::list_marketplace_entries().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_installed_plugins() -> Result<Vec<catalog::CatalogEntry>, String> {
+    catalog::list_installed().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
