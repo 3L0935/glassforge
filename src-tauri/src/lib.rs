@@ -61,6 +61,10 @@ pub fn run() {
             install_skill,
             list_marketplace_entries,
             list_installed_plugins,
+            install_catalog_plugin,
+            uninstall_catalog_plugin,
+            change_catalog_plugin_scope,
+            refresh_catalog_marketplaces,
             list_dir,
             save_clipboard_image,
             read_image_as_data_url,
@@ -229,6 +233,36 @@ fn list_marketplace_entries() -> Result<Vec<catalog::CatalogEntry>, String> {
 #[tauri::command]
 fn list_installed_plugins() -> Result<Vec<catalog::CatalogEntry>, String> {
     catalog::list_installed().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn install_catalog_plugin(name: String, scope: String) -> Result<(), String> {
+    let s = match scope.as_str() {
+        "project" => catalog::Scope::Project,
+        "local" => catalog::Scope::Local,
+        _ => catalog::Scope::User,
+    };
+    catalog::install_plugin(&name, &s).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn uninstall_catalog_plugin(name: String) -> Result<(), String> {
+    catalog::uninstall_plugin(&name).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn change_catalog_plugin_scope(plugin_id: String, new_scope: String) -> Result<(), String> {
+    let s = match new_scope.as_str() {
+        "project" => catalog::Scope::Project,
+        "local" => catalog::Scope::Local,
+        _ => catalog::Scope::User,
+    };
+    catalog::change_plugin_scope(&plugin_id, &s).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn refresh_catalog_marketplaces() -> Result<(), String> {
+    catalog::refresh_marketplaces().map_err(|e| e.to_string())
 }
 
 #[tauri::command]

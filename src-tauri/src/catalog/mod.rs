@@ -3,9 +3,11 @@
 
 pub mod types;
 
+mod actions;
 mod installed;
 mod marketplace;
 
+pub use actions::{change_plugin_scope, install_plugin, refresh_marketplaces, uninstall_plugin};
 pub use installed::list_installed;
 pub use marketplace::list_marketplace_entries;
-pub use types::CatalogEntry;
+pub use types::{CatalogEntry, Scope};
