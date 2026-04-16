@@ -43,5 +43,8 @@ flatpak/*.flatpak
 dist/
 .claude/
 
+# ── Worktrees ────────────────────────────────────────────────
+.worktrees/
+
 # ── Brainstorm / session cache ───────────────────────────────
 .superpowers/
