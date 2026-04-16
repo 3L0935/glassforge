@@ -250,7 +250,7 @@ async fn install_catalog_plugin(name: String, scope: catalog::Scope) -> Result<(
 
 #[tauri::command]
 async fn uninstall_catalog_plugin(name: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || catalog::uninstall_plugin(&name).map_err(|e| e.to_string()))
+    tokio::task::spawn_blocking(move || catalog::uninstall_entry(&name).map_err(|e| e.to_string()))
         .await
         .map_err(|e| e.to_string())?
 }

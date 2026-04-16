@@ -37,15 +37,37 @@ pub fn install_plugin(name: &str, scope: &Scope) -> Result<()> {
     Ok(())
 }
 
-/// Uninstall a plugin via `claude plugin uninstall <name>`.
-pub fn uninstall_plugin(name: &str) -> Result<()> {
-    let status = Command::new("claude")
-        .args(["plugin", "uninstall", name])
-        .status()
-        .context("failed to invoke claude CLI")?;
+/// Uninstall a plugin or standalone skill.
+///
+/// For plugins (id contains `@`): shells out to `claude plugin uninstall`.
+/// For standalone skills: removes the directory from `~/.claude/skills/`.
+pub fn uninstall_entry(name: &str) -> Result<()> {
+    if name.contains('@') {
+        // Marketplace plugin — use CLI
+        let status = Command::new("claude")
+            .args(["plugin", "uninstall", name])
+            .status()
+            .context("failed to invoke claude CLI")?;
 
-    if !status.success() {
-        return Err(anyhow!("claude plugin uninstall exited with {}", status));
+        if !status.success() {
+            return Err(anyhow!("claude plugin uninstall exited with {}", status));
+        }
+    } else {
+        // Standalone skill — remove directory
+        let dir = home_dir()
+            .ok_or_else(|| anyhow!("HOME not set"))?
+            .join(".claude")
+            .join("skills")
+            .join(name);
+
+        if !dir.is_dir() {
+            return Err(anyhow!("skill directory not found: {}", dir.display()));
+        }
+        // Validate the name doesn't contain path traversal
+        if name.contains("..") || name.contains('/') {
+            return Err(anyhow!("invalid skill name: {name}"));
+        }
+        fs::remove_dir_all(&dir).with_context(|| format!("remove {}", dir.display()))?;
     }
     Ok(())
 }
