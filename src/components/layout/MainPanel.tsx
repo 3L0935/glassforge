@@ -1,8 +1,10 @@
 import type { ChatEntry } from "@/lib/types";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { ChatView } from "@/components/sessions/ChatView";
 import { ComposeInput } from "@/components/sessions/ComposeInput";
 import { PermissionModal } from "@/components/sessions/PermissionModal";
+import { DetailView } from "@/components/skills/DetailView";
 
 import styles from "./MainPanel.module.css";
 
@@ -21,7 +23,19 @@ export function MainPanel() {
     s.activeId ? (s.entries[s.activeId] ?? EMPTY_ENTRIES) : EMPTY_ENTRIES,
   ) as ChatEntry[];
 
+  const selectedEntry = useCatalogStore((s) => s.selectedEntry);
+
   void activeId;
+
+  // Detail view replaces chat when a catalog entry is selected.
+  if (selectedEntry) {
+    return (
+      <main className={styles.root}>
+        <DetailView entry={selectedEntry} />
+      </main>
+    );
+  }
+
   if (!activeSession) {
     return (
       <main className={styles.root}>
