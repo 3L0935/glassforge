@@ -3,6 +3,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, State, WebviewWindow};
 
 mod attachments;
+mod catalog;
 mod claude;
 mod config;
 mod fs_browse;
@@ -58,6 +59,13 @@ pub fn run() {
             get_rate_limits,
             list_skills,
             install_skill,
+            list_marketplace_entries,
+            list_installed_plugins,
+            install_catalog_plugin,
+            uninstall_catalog_plugin,
+            change_catalog_plugin_scope,
+            refresh_catalog_marketplaces,
+            add_catalog_marketplace,
             list_dir,
             save_clipboard_image,
             read_image_as_data_url,
@@ -216,6 +224,64 @@ fn list_skills() -> Result<Vec<Skill>, String> {
 #[tauri::command]
 fn install_skill(url: String) -> Result<Skill, String> {
     skills::install_skill_from_git(&url).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn list_marketplace_entries() -> Result<Vec<catalog::CatalogEntry>, String> {
+    tokio::task::spawn_blocking(|| catalog::list_marketplace_entries().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn list_installed_plugins() -> Result<Vec<catalog::CatalogEntry>, String> {
+    tokio::task::spawn_blocking(|| catalog::list_installed().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn install_catalog_plugin(name: String, scope: catalog::Scope) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        catalog::install_plugin(&name, &scope).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn uninstall_catalog_plugin(name: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || catalog::uninstall_entry(&name).map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn change_catalog_plugin_scope(
+    plugin_id: String,
+    new_scope: catalog::Scope,
+) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        catalog::change_plugin_scope(&plugin_id, &new_scope).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn refresh_catalog_marketplaces() -> Result<(), String> {
+    tokio::task::spawn_blocking(|| catalog::refresh_marketplaces().map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn add_catalog_marketplace(repo: String) -> Result<(), String> {
+    tokio::task::spawn_blocking(move || {
+        catalog::add_marketplace(&repo).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

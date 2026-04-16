@@ -1,3 +1,40 @@
+// ── Catalog types (mirrors Rust catalog::types) ─────────────
+
+export type EntryType = "Skill" | "Plugin";
+
+export type Source =
+  | { Marketplace: { name: string } }
+  | "Standalone"
+  | { Git: { url: string } };
+
+export type Scope = "User" | "Project" | "Local";
+
+export type InstalledInfo = {
+  scope: Scope;
+  version: string;
+  path: string;
+  has_update: boolean;
+};
+
+export type CatalogEntry = {
+  id: string;
+  name: string;
+  description: string;
+  entry_type: EntryType;
+  source: Source;
+  version: string | null;
+  author: string | null;
+  license: string | null;
+  homepage: string | null;
+  repository: string | null;
+  category: string | null;
+  keywords: string[];
+  install_count: number | null;
+  installed: InstalledInfo | null;
+};
+
+// ── Session types ───────────────────────────────────────────
+
 export type SessionStatus = "idle" | "running" | "error" | "done";
 
 export type SessionInfo = {
