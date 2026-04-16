@@ -6,7 +6,6 @@ import { Check, ChevronDown, ChevronRight, Copy, GitBranch, Wrench } from "lucid
 import * as log from "@/lib/log";
 import {
   formatCost,
-  formatTokens,
   prettyModelName,
 } from "@/lib/pricing";
 import { computeSessionStats } from "@/lib/sessionStats";
@@ -27,10 +26,6 @@ import styles from "./ChatView.module.css";
 const MODEL_OPTIONS: DropdownOption<string | null>[] = [
   { label: "Default", value: null },
   { label: "Opus 4.6", value: "opus" },
-  // `opus[1m]` / `sonnet[1m]` are claude-code's own 1M-context aliases
-  // (confirmed via `strings` on the CLI + live smoke test). Passing them
-  // through `--model` makes claude itself run on the 1M window — no
-  // guessing, no observation needed. Haiku has no 1M variant.
   { label: "Opus 4.6 (1M)", value: "opus[1m]" },
   { label: "Sonnet 4.6", value: "sonnet" },
   { label: "Sonnet 4.6 (1M)", value: "sonnet[1m]" },
@@ -46,10 +41,10 @@ const EFFORT_OPTIONS: DropdownOption<string | null>[] = [
 ];
 
 const PERMISSION_OPTIONS: DropdownOption<PermissionMode>[] = [
-  { label: "Manual approval", value: "manual" },
-  { label: "Accept edits", value: "acceptEdits" },
-  { label: "Bypass", value: "bypassPermissions" },
-  { label: "Plan only", value: "plan" },
+  { label: "Perms: manual", value: "manual" },
+  { label: "Perms: auto-edit", value: "acceptEdits" },
+  { label: "Perms: auto-approve", value: "bypassPermissions" },
+  { label: "Perms: plan only", value: "plan" },
 ];
 
 type Props = {
@@ -63,9 +58,7 @@ export function ChatView({ session, entries }: Props) {
     (s) => s.usage[session.id] ?? null,
   ) as SessionUsage | null;
   const permissionMode = usePreferencesStore((s) => s.permissionMode);
-  const setPermissionMode = usePreferencesStore(
-    (s) => s.setPermissionMode,
-  );
+  const setPermissionMode = usePreferencesStore((s) => s.setPermissionMode);
   const longContextScope = usePreferencesStore((s) => s.longContextScope);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -149,19 +142,12 @@ export function ChatView({ session, entries }: Props) {
             />
             <Dropdown
               size="sm"
-              ariaLabel="Permission mode"
+              ariaLabel="Permissions"
               options={PERMISSION_OPTIONS}
               value={permissionMode}
               onChange={(v) => void setPermissionMode(v)}
             />
-            <span className={styles.dot}>•</span>
             <span className={styles[session.status]}>{session.status}</span>
-            <span className={styles.dot}>•</span>
-            <span>
-              in {formatTokens(stats.inT)} · out {formatTokens(stats.outT)}
-            </span>
-            <span className={styles.dot}>•</span>
-            <span>{formatCost(stats.cumulativeCostUsd)}</span>
           </div>
         </div>
         <ContextRing

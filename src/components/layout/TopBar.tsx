@@ -24,6 +24,7 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
         <button
           className={styles.controlButton}
           aria-label="Settings"
+          title="Settings (Ctrl+,)"
           onClick={onOpenSettings}
           type="button"
         >
@@ -32,6 +33,7 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
         <button
           className={styles.controlButton}
           aria-label="Minimize"
+          title="Minimize"
           onClick={() => win.minimize()}
           type="button"
         >
@@ -40,6 +42,7 @@ export function TopBar({ onOpenSettings }: TopBarProps) {
         <button
           className={`${styles.controlButton} ${styles.closeButton}`}
           aria-label="Close"
+          title="Close"
           onClick={() => win.close()}
           type="button"
         >

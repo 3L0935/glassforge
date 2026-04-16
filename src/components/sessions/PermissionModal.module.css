@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: var(--z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,9 +25,7 @@
   border: 1px solid
     color-mix(in srgb, var(--accent-warning, #e0a050) 35%, var(--glass-border));
   border-radius: var(--radius-lg);
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.65),
-    0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-modal);
   backdrop-filter: blur(var(--modal-panel-blur)) saturate(var(--glass-saturation));
   -webkit-backdrop-filter: blur(var(--modal-panel-blur)) saturate(var(--glass-saturation));
   overflow: hidden;
@@ -42,8 +40,8 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.9rem 1rem;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
   border-bottom: 1px solid var(--glass-border);
 }
 
@@ -54,7 +52,7 @@
 
 .title {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: var(--text-lg);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -63,8 +61,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
-  padding: 0.85rem 1rem;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4);
   min-height: 0;
   overflow-y: auto;
 }
@@ -72,11 +70,11 @@
 .row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-3);
 }
 
 .label {
-  font-size: 0.64rem;
+  font-size: var(--label-sm);
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -84,7 +82,7 @@
 }
 
 .toolName {
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   font-weight: 600;
   color: var(--accent-primary);
   font-family: var(--font-mono);
@@ -93,19 +91,19 @@
 .inputBlock {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--space-2);
   min-height: 0;
 }
 
 .inputPre {
   margin: 0;
-  padding: 0.6rem 0.75rem;
-  background: rgba(0, 0, 0, 0.35);
+  padding: var(--space-3) var(--space-3);
+  background: var(--surface-sunken);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--label-md);
   line-height: 1.4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -117,29 +115,29 @@
 .footer {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 0.75rem 0.9rem;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--surface-base);
 }
 
 .button {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.5rem 0.85rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-sm);
   border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-base);
   color: var(--text-primary);
-  font-size: 0.76rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
+  transition: background var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default), transform var(--duration-fast) var(--ease-default);
 }
 
 .button:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-overlay);
 }
 
 .button:active {

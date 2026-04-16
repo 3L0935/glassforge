@@ -4,9 +4,7 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  background: var(--surface-base);
 }
 
 .empty {
@@ -16,13 +14,13 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 0.4rem;
-  padding: 2rem;
+  gap: var(--space-2);
+  padding: var(--space-6);
 }
 
 .emptyTitle {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: var(--text-2xl);
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -30,6 +28,6 @@
 .emptySubtitle {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--text-md);
   max-width: 30ch;
 }

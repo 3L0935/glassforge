@@ -184,6 +184,7 @@ export function Sidebar() {
         <button
           type="button"
           className={styles.newButton}
+          title="New session (Ctrl+N)"
           onClick={onNew}
           disabled={busy}
         >
@@ -249,6 +250,7 @@ export function Sidebar() {
           className={`${styles.tab} ${tab === "sessions" ? styles.tabActive : ""}`}
           onClick={() => setTab("sessions")}
           aria-label="Sessions"
+          title="Sessions (Ctrl+Tab)"
         >
           <Terminal size={12} />
           <span className={styles.tabCount}>{order.length}</span>
@@ -258,6 +260,7 @@ export function Sidebar() {
           className={`${styles.tab} ${tab === "usage" ? styles.tabActive : ""}`}
           onClick={() => setTab("usage")}
           aria-label="Usage"
+          title="Usage"
         >
           <BarChart3 size={12} />
         </button>
@@ -266,6 +269,7 @@ export function Sidebar() {
           className={`${styles.tab} ${tab === "skills" ? styles.tabActive : ""}`}
           onClick={() => setTab("skills")}
           aria-label="Skills"
+          title="Skills"
         >
           <Sparkles size={12} />
         </button>

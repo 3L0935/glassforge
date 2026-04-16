@@ -31,12 +31,12 @@
       ),
       transparent 70%
     );
-  z-index: 0;
+  z-index: var(--z-base);
 }
 
 .chrome {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-chrome);
   display: flex;
   flex-direction: column;
   width: 100%;

@@ -1,8 +1,8 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.3rem 0.2rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
   min-height: 0;
 }
 
@@ -10,11 +10,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.1rem 0.25rem;
+  padding: var(--space-1) var(--space-1);
 }
 
 .headerLabel {
-  font-size: 0.6rem;
+  font-size: var(--label-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
@@ -30,11 +30,11 @@
   border: none;
   color: var(--text-muted);
   border-radius: 4px;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .refresh:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-raised);
   color: var(--text-primary);
 }
 
@@ -49,16 +49,16 @@
 
 .empty {
   margin: 0;
-  padding: 0.5rem 0.3rem;
-  font-size: 0.72rem;
+  padding: var(--space-2) var(--space-2);
+  font-size: var(--label-md);
   color: var(--text-muted);
   line-height: 1.4;
 }
 
 .error {
   margin: 0;
-  padding: 0.3rem 0.5rem;
-  font-size: 0.7rem;
+  padding: var(--space-2) var(--space-2);
+  font-size: var(--label-md);
   color: var(--accent-danger);
   font-family: var(--font-mono);
   word-break: break-word;
@@ -70,7 +70,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--space-1);
   min-height: 0;
   overflow-y: auto;
 }
@@ -78,7 +78,7 @@
 .item {
   display: flex;
   align-items: stretch;
-  gap: 0.2rem;
+  gap: var(--space-1);
 }
 
 .sessionCard {
@@ -86,19 +86,19 @@
   min-width: 0;
   display: flex;
   align-items: flex-start;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2);
+  background: var(--surface-base);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
 }
 
 .sessionCard:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-raised);
   border-color:
     color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
@@ -127,12 +127,12 @@
 .sessionText {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .sessionLabel {
-  font-size: 0.72rem;
+  font-size: var(--label-md);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -141,7 +141,7 @@
 }
 
 .sessionMeta {
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
@@ -157,7 +157,7 @@
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
 }
 
 .deleteButton:hover {
@@ -176,10 +176,10 @@
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--label-md);
   font-weight: 500;
-  padding: 0.35rem 0.5rem;
-  background: rgba(0, 0, 0, 0.25);
+  padding: var(--space-2) var(--space-2);
+  background: var(--surface-sunken);
   border: 1px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
   border-radius: var(--radius-sm);
   color: var(--text-primary);

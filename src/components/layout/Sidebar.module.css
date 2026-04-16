@@ -5,11 +5,9 @@
   width: var(--sidebar-width);
   min-width: var(--sidebar-width);
   height: 100%;
-  padding: 1rem 0.75rem 0.75rem;
-  background: var(--glass-bg);
+  padding: var(--space-4) var(--space-3) var(--space-3);
+  background: var(--surface-base);
   border-right: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -21,9 +19,9 @@
   width: 5px;
   height: 100%;
   cursor: col-resize;
-  z-index: 10;
+  z-index: var(--z-sticky);
   background: transparent;
-  transition: background 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default);
 }
 
 .resizeHandle::before {
@@ -34,7 +32,7 @@
   width: 1px;
   height: 100%;
   background: transparent;
-  transition: background 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default);
 }
 
 .resizeHandle:hover::before {
@@ -54,36 +52,36 @@
 .newSession {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .label {
-  font-size: 0.7rem;
+  font-size: var(--label-md);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding-left: 0.2rem;
+  padding-left: var(--space-1);
 }
 
 .pathRow {
   display: flex;
   align-items: stretch;
-  gap: 0.35rem;
+  gap: var(--space-1);
 }
 
 .input {
   flex: 1;
   min-width: 0;
-  padding: 0.5rem 0.7rem;
-  background: rgba(255, 255, 255, 0.03);
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-base);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: var(--text-sm);
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color var(--duration-base) var(--ease-default), background var(--duration-base) var(--ease-default);
 }
 
 .browseButton {
@@ -91,16 +89,16 @@
   align-items: center;
   justify-content: center;
   width: 32px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-raised);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default), color var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default);
 }
 
 .browseButton:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-hover);
   color: var(--text-primary);
   border-color:
     color-mix(in srgb, var(--accent-primary) 40%, transparent);
@@ -108,70 +106,24 @@
 
 .input:focus {
   border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-raised);
 }
 
-.modelRow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.modelLabel {
-  font-size: 0.65rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-left: 0.2rem;
-}
-
-.modelSelect {
-  flex: 1;
-  min-width: 0;
-  padding: 0.4rem 1.6rem 0.4rem 0.55rem;
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  outline: none;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='none' stroke='%23a0a0b0' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.55rem center;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-.modelSelect:hover {
-  background-color: rgba(255, 255, 255, 0.07);
-}
-
-.modelSelect:focus {
-  border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
-}
-
-.modelSelect option {
-  background: #1a1830;
-  color: var(--text-primary);
-}
 
 .newButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.55rem 0.8rem;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
   background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
   border: 1px solid
     color-mix(in srgb, var(--accent-primary) 40%, transparent);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
-  font-size: 0.8rem;
+  font-size: var(--text-md);
   font-weight: 500;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background var(--duration-base) var(--ease-default), transform var(--duration-fast) var(--ease-default);
 }
 
 .newButton:hover:not(:disabled) {
@@ -190,7 +142,7 @@
 .error {
   margin: 0;
   color: var(--accent-danger);
-  font-size: 0.72rem;
+  font-size: var(--label-md);
   font-family: var(--font-mono);
   word-break: break-word;
 }
@@ -198,20 +150,20 @@
 .history {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0 0.2rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-3);
 }
 
 .historyHeader {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.6rem;
+  gap: var(--space-1);
+  font-size: var(--label-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
-  padding-bottom: 0.25rem;
+  padding-bottom: var(--space-1);
 }
 
 .historyClear {
@@ -220,7 +172,7 @@
   border: none;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   cursor: pointer;
   padding: 0;
 }
@@ -235,7 +187,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: var(--space-1);
   max-height: 9rem;
   overflow-y: auto;
 }
@@ -243,7 +195,7 @@
 .historyItem {
   display: flex;
   align-items: stretch;
-  gap: 0.2rem;
+  gap: var(--space-1);
 }
 
 .historyButton {
@@ -253,24 +205,24 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.08rem;
-  padding: 0.35rem 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+  padding: var(--space-1) var(--space-2);
+  background: var(--surface-base);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   text-align: left;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), border-color var(--duration-fast) var(--ease-default);
   cursor: pointer;
 }
 
 .historyButton:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-raised);
   border-color:
     color-mix(in srgb, var(--accent-primary) 35%, transparent);
 }
 
 .historyName {
-  font-size: 0.72rem;
+  font-size: var(--label-md);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -280,7 +232,7 @@
 
 .historyPath {
   font-family: var(--font-mono);
-  font-size: 0.56rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
@@ -298,7 +250,7 @@
   border-radius: var(--radius-sm);
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
 }
 
 .historyRemove:hover {
@@ -308,9 +260,9 @@
 
 .tabs {
   display: flex;
-  gap: 0.3rem;
-  padding: 0 0.2rem;
-  margin-bottom: 0.6rem;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  margin-bottom: var(--space-2);
 }
 
 .tab {
@@ -318,22 +270,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.4rem 0.5rem;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2);
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: var(--label-md);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background var(--duration-base) var(--ease-default), color var(--duration-base) var(--ease-default), border-color var(--duration-base) var(--ease-default);
 }
 
 .tab:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-base);
 }
 
 .tabActive {
@@ -345,7 +297,7 @@
 .tabCount {
   font-family: var(--font-mono);
   color: var(--text-muted);
-  font-size: 0.62rem;
+  font-size: var(--label-sm);
 }
 
 .tabBody {
@@ -358,16 +310,16 @@
 
 .empty {
   margin: 0;
-  padding: 0.5rem 0.2rem;
-  font-size: 0.75rem;
+  padding: var(--space-2) var(--space-1);
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
 .list {
   list-style: none;
   margin: 0;
-  padding: 0 0.2rem;
+  padding: 0 var(--space-1);
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--space-2);
 }

@@ -1,51 +1,97 @@
 :root {
-  /* ── Base ── */
-  --bg-primary: #0c0a1a;
-  --bg-primary-rgb: 12, 10, 26;
-  --bg-secondary: rgba(255, 255, 255, 0.04);
+  /* ── Base (synced with DEFAULT_THEME in theme.ts) ── */
+  --bg-primary: #0a0319;
+  --bg-primary-rgb: 10, 3, 25;
   --text-primary: rgba(255, 255, 255, 0.9);
-  --text-secondary: rgba(255, 255, 255, 0.5);
-  --text-muted: rgba(255, 255, 255, 0.3);
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.5);
 
-  /* ── Glass Effect ── */
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 40px;
-  --glass-saturation: 1.6;
-
-  /* ── Accent & Glow ── */
-  --accent-primary: #818cf8;
-  --accent-secondary: #34d399;
+  /* ── Accent (synced with DEFAULT_THEME) ── */
+  --accent-primary: #f472b6;
+  --accent-secondary: #22d3ee;
   --accent-warning: #fbbf24;
   --accent-danger: #ef4444;
-  --accent-glow-opacity: 0.08;
-  --accent-glow-radius: 500px;
+  --accent-glow-opacity: 0.14;
+  --accent-glow-radius: 608px;
+
+  /* ── Glass ── */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 48px;
+  --glass-saturation: 1.0;
+
+  /* ── Surfaces (3-tier hierarchy) ── */
+  --surface-base: rgba(255, 255, 255, 0.02);
+  --surface-raised: rgba(255, 255, 255, 0.04);
+  --surface-overlay: rgba(255, 255, 255, 0.06);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface-sunken: rgba(0, 0, 0, 0.35);
+  --option-bg: #1a1830;
+  --code-text: #e6e6e6;
 
   /* ── Window ── */
-  --window-opacity: 1;
   --window-bg-opacity: 0.7;
 
-  /* ── Blur ── */
-  --blur-enabled: 1;
-  --blur-strength: 40px;
-  --blur-saturation: 1.6;
-
-  /* ── Modals (overlay dim + panel glass) ── */
-  --modal-dim-alpha: 0.62;
+  /* ── Modals (synced with DEFAULT_THEME) ── */
+  --modal-dim-alpha: 0.26;
   --modal-panel-alpha: 0.38;
-  --modal-panel-blur: 48px;
+  --modal-panel-blur: 16px;
 
-  /* ── Sidebar ── */
+  /* ── Layout ── */
   --sidebar-width: 260px;
-  --sidebar-bg: rgba(255, 255, 255, 0.01);
 
   /* ── Radius ── */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
 
-  /* ── Fonts ── */
+  /* ── Typography ── */
   --font-sans: "Geist", "Inter", "SF Pro Display", system-ui, sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   --font-size-base: 14px;
+
+  /* ── Type Scale (rem, relative to --font-size-base) ── */
+  --text-xs: 0.625rem;
+  --text-sm: 0.72rem;
+  --text-md: 0.82rem;
+  --text-lg: 0.95rem;
+  --text-xl: 1.1rem;
+  --text-2xl: 1.25rem;
+
+  /* ── Label scale (uppercase micro-text) ── */
+  --label-xs: 0.6rem;
+  --label-sm: 0.66rem;
+  --label-md: 0.72rem;
+
+  /* ── Spacing (4px base) ── */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 4rem;
+
+  /* ── Transitions ── */
+  --duration-fast: 0.12s;
+  --duration-base: 0.15s;
+  --duration-slow: 0.3s;
+  --ease-default: ease;
+
+  /* ── Z-Index ── */
+  --z-base: 0;
+  --z-chrome: 1;
+  --z-sticky: 10;
+  --z-dropdown: 50;
+  --z-modal: 100;
+  --z-overlay: 200;
+  --z-toast: 300;
+
+  /* ── Shadows ── */
+  --shadow-dropdown: 0 18px 40px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-panel: -20px 0 60px rgba(0, 0, 0, 0.6);
+
+  /* ── Focus ── */
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 70%, transparent);
 }
