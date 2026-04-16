@@ -12,6 +12,7 @@ import { homeDir } from "@tauri-apps/api/path";
 
 import * as log from "@/lib/log";
 import { createSession } from "@/lib/tauri-commands";
+import { useCatalogStore } from "@/stores/catalogStore";
 import { useProjectHistoryStore } from "@/stores/projectHistoryStore";
 import { useSessionStore } from "@/stores/sessionStore";
 
@@ -56,6 +57,7 @@ export function Sidebar() {
   const [projectPath, setProjectPath] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const catalogUpdateCount = useCatalogStore((s) => s.updateCount);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [width, setWidth] = useState<number>(() => loadSidebarWidth());
   const rootRef = useRef<HTMLElement | null>(null);
@@ -272,6 +274,9 @@ export function Sidebar() {
           title="Skills"
         >
           <Sparkles size={12} />
+          {catalogUpdateCount() > 0 ? (
+            <span className={styles.updateBadge}>{catalogUpdateCount()}</span>
+          ) : null}
         </button>
       </div>
 

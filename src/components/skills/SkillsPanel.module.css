@@ -1,97 +1,16 @@
 .root {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-1);
   min-height: 0;
+  overflow-y: auto;
 }
 
-.installBox {
+.refreshRow {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.label {
-  font-size: var(--label-md);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-left: var(--space-1);
-}
-
-.inputRow {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.input {
-  flex: 1;
-  min-width: 0;
-  padding: var(--space-2) var(--space-3);
-  background: var(--surface-base);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--label-md);
-  outline: none;
-  transition: border-color var(--duration-base) var(--ease-default), background var(--duration-base) var(--ease-default);
-}
-
-.input:focus {
-  border-color: color-mix(in srgb, var(--accent-primary) 60%, transparent);
-  background: var(--surface-raised);
-}
-
-.input:disabled {
-  opacity: 0.5;
-}
-
-.installButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid
-    color-mix(in srgb, var(--accent-primary) 35%, transparent);
-  background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  transition: background var(--duration-base) var(--ease-default);
-}
-
-.installButton:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent-primary) 30%, transparent);
-}
-
-.installButton:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.error {
-  margin: 0;
-  color: var(--accent-danger);
-  font-size: var(--label-md);
-  font-family: var(--font-mono);
-  word-break: break-word;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: 0 var(--space-1);
-  margin-top: var(--space-2);
-}
-
-.headerLabel {
-  font-size: var(--label-sm);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
 }
 
 .refresh {
@@ -104,12 +23,34 @@
   border: none;
   color: var(--text-muted);
   border-radius: 4px;
-  transition: background var(--duration-fast) var(--ease-default), color var(--duration-fast) var(--ease-default);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-default),
+    color var(--duration-fast) var(--ease-default);
 }
 
 .refresh:hover {
   background: var(--surface-raised);
   color: var(--text-primary);
+}
+
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 0 var(--space-1);
+}
+
+.skeleton {
+  height: 40px;
+  background: var(--surface-base);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
 }
 
 .empty {
@@ -120,49 +61,17 @@
 }
 
 .list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-3);
 }
 
-.skillCard {
-  padding: var(--space-3) var(--space-3);
-  background: var(--surface-base);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-sm);
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.skillName {
-  font-size: var(--text-md);
-  font-weight: 500;
-  color: var(--text-primary);
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.skillDescription {
-  margin-top: var(--space-1);
-  font-size: var(--label-md);
-  line-height: 1.4;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-.skillPath {
-  margin-top: var(--space-2);
-  font-family: var(--font-mono);
+.sectionHeader {
+  margin: 0;
+  padding: 0 var(--space-1);
   font-size: var(--label-sm);
-  color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  font-weight: 500;
 }

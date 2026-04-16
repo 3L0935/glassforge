@@ -1,127 +1,107 @@
-import { useCallback, useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { Download, RefreshCw } from "lucide-react";
+import { useEffect } from "react";
+import { RefreshCw } from "lucide-react";
 
-import * as log from "@/lib/log";
+import { useCatalogStore } from "@/stores/catalogStore";
 
+import { CatalogListItem } from "./CatalogListItem";
+import { FilterPills } from "./FilterPills";
+import { SearchBar } from "./SearchBar";
 import styles from "./SkillsPanel.module.css";
 
-type Skill = {
-  name: string;
-  description: string;
-  path: string;
-  source: string;
-};
-
 export function SkillsPanel() {
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [installUrl, setInstallUrl] = useState("");
-  const [installing, setInstalling] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const loading = useCatalogStore((s) => s.loading);
+  const searchQuery = useCatalogStore((s) => s.searchQuery);
+  const typeFilter = useCatalogStore((s) => s.typeFilter);
+  const statusFilter = useCatalogStore((s) => s.statusFilter);
+  const selectedEntry = useCatalogStore((s) => s.selectedEntry);
+  const fetchCatalog = useCatalogStore((s) => s.fetchCatalog);
+  const refreshMarketplaces = useCatalogStore((s) => s.refreshMarketplaces);
+  const setSearchQuery = useCatalogStore((s) => s.setSearchQuery);
+  const setTypeFilter = useCatalogStore((s) => s.setTypeFilter);
+  const setStatusFilter = useCatalogStore((s) => s.setStatusFilter);
+  const selectEntry = useCatalogStore((s) => s.selectEntry);
+  const filteredEntries = useCatalogStore((s) => s.filteredEntries);
+  const updateCount = useCatalogStore((s) => s.updateCount);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const list = await invoke<Skill[]>("list_skills");
-      setSkills(list);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setErr(msg);
-      log.error("list_skills failed", msg);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const entries = filteredEntries();
+  const updates = updateCount();
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void fetchCatalog();
+    void refreshMarketplaces();
+  }, [fetchCatalog, refreshMarketplaces]);
 
-  async function onInstall() {
-    const url = installUrl.trim();
-    if (!url) return;
-    setInstalling(true);
-    setErr(null);
-    try {
-      await invoke<Skill>("install_skill", { url });
-      setInstallUrl("");
-      await load();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setErr(msg);
-      log.error("install_skill failed", msg);
-    } finally {
-      setInstalling(false);
-    }
-  }
+  const installed = entries.filter((e) => e.installed != null);
+  const available = entries.filter((e) => e.installed == null);
 
   return (
     <div className={styles.root}>
-      <div className={styles.installBox}>
-        <label className={styles.label} htmlFor="install-url">
-          Install from git
-        </label>
-        <div className={styles.inputRow}>
-          <input
-            id="install-url"
-            className={styles.input}
-            type="text"
-            placeholder="https://github.com/user/skill"
-            value={installUrl}
-            onChange={(e) => setInstallUrl(e.target.value)}
-            spellCheck={false}
-            disabled={installing}
-          />
-          <button
-            type="button"
-            className={styles.installButton}
-            onClick={onInstall}
-            disabled={installing || !installUrl.trim()}
-            aria-label="Install skill"
-          >
-            <Download size={14} />
-          </button>
-        </div>
-        {err ? <p className={styles.error}>{err}</p> : null}
-      </div>
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
+      <FilterPills
+        typeFilter={typeFilter}
+        statusFilter={statusFilter}
+        updateCount={updates}
+        onTypeChange={setTypeFilter}
+        onStatusChange={setStatusFilter}
+      />
 
-      <div className={styles.header}>
-        <span className={styles.headerLabel}>
-          Installed{skills.length ? ` · ${skills.length}` : ""}
-        </span>
+      <div className={styles.refreshRow}>
         <button
           type="button"
           className={styles.refresh}
-          onClick={() => void load()}
-          aria-label="Refresh"
+          onClick={() => void refreshMarketplaces()}
+          aria-label="Refresh marketplaces"
+          title="Refresh marketplace catalogs"
         >
           <RefreshCw size={11} />
         </button>
       </div>
 
       {loading ? (
-        <p className={styles.empty}>Loading…</p>
-      ) : skills.length === 0 ? (
+        <div className={styles.skeletons}>
+          <div className={styles.skeleton} />
+          <div className={styles.skeleton} />
+          <div className={styles.skeleton} />
+        </div>
+      ) : entries.length === 0 ? (
         <p className={styles.empty}>
-          No skills found. Install one by entering a package name above, or
-          check the Claude Code docs for available skills.
+          {searchQuery
+            ? "No matches found."
+            : "No plugins or skills found. Add a marketplace via the Claude CLI."}
         </p>
       ) : (
-        <ul className={styles.list}>
-          {skills.map((s) => (
-            <li key={s.path} className={styles.skillCard}>
-              <div className={styles.skillName}>{s.name}</div>
-              {s.description ? (
-                <div className={styles.skillDescription}>{s.description}</div>
-              ) : null}
-              <div className={styles.skillPath} title={s.path}>
-                {s.path}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <div className={styles.list}>
+          {installed.length > 0 ? (
+            <section>
+              <h3 className={styles.sectionHeader}>
+                Installed · {installed.length}
+              </h3>
+              {installed.map((e) => (
+                <CatalogListItem
+                  key={e.id}
+                  entry={e}
+                  selected={selectedEntry?.id === e.id}
+                  onClick={() => selectEntry(e)}
+                />
+              ))}
+            </section>
+          ) : null}
+          {available.length > 0 ? (
+            <section>
+              <h3 className={styles.sectionHeader}>
+                Available · {available.length}
+              </h3>
+              {available.map((e) => (
+                <CatalogListItem
+                  key={e.id}
+                  entry={e}
+                  selected={selectedEntry?.id === e.id}
+                  onClick={() => selectEntry(e)}
+                />
+              ))}
+            </section>
+          ) : null}
+        </div>
       )}
     </div>
   );

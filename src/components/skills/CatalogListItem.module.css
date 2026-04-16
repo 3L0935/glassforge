@@ -1,0 +1,106 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+  font-family: var(--font-sans);
+  transition: background var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+}
+
+.root:hover {
+  background: var(--surface-hover);
+}
+
+.root.selected {
+  background: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotInstalled {
+  background: #22c55e;
+}
+
+.dotAvailable {
+  background: var(--text-muted);
+}
+
+.name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+  border-radius: 4px;
+  font-size: var(--label-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+}
+
+.badgePlugin {
+  background: color-mix(in srgb, var(--accent-secondary) 20%, transparent);
+  color: var(--accent-secondary);
+}
+
+.badgeSkill {
+  background: color-mix(in srgb, var(--accent-warning) 20%, transparent);
+  color: var(--accent-warning);
+}
+
+.updateDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-warning);
+  flex-shrink: 0;
+}
+
+.meta {
+  padding-left: calc(6px + var(--space-1));
+  min-width: 0;
+}
+
+.description {
+  font-size: var(--label-sm);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.count {
+  font-size: var(--label-sm);
+  color: var(--text-muted);
+}
