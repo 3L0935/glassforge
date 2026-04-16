@@ -277,11 +277,9 @@ async fn refresh_catalog_marketplaces() -> Result<(), String> {
 
 #[tauri::command]
 async fn add_catalog_marketplace(repo: String) -> Result<(), String> {
-    tokio::task::spawn_blocking(move || {
-        catalog::add_marketplace(&repo).map_err(|e| e.to_string())
-    })
-    .await
-    .map_err(|e| e.to_string())?
+    tokio::task::spawn_blocking(move || catalog::add_marketplace(&repo).map_err(|e| e.to_string()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
