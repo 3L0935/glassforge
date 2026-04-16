@@ -207,7 +207,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.6rem;
+  font-size: var(--label-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
@@ -220,7 +220,7 @@
   border: none;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   cursor: pointer;
   padding: 0;
 }
@@ -280,7 +280,7 @@
 
 .historyPath {
   font-family: var(--font-mono);
-  font-size: 0.56rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;

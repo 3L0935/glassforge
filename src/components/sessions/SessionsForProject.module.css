@@ -14,7 +14,7 @@
 }
 
 .headerLabel {
-  font-size: 0.6rem;
+  font-size: var(--label-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-secondary);
@@ -141,7 +141,7 @@
 }
 
 .sessionMeta {
-  font-size: 0.58rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
   font-family: var(--font-mono);
 }
